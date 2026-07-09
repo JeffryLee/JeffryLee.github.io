@@ -254,7 +254,7 @@ a:hover, a:focus { color: var(--link-hover); }
   border-radius: 50%;
   aspect-ratio: 1;
   object-fit: cover;
-  object-position: center 15%;
+  object-position: center 28%;
   display: block;
   border: none;
   outline: none;
