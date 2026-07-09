@@ -20,6 +20,9 @@ import {
   getHotelById,
   resolveItinerary,
   listFlightOptions,
+  rollSpendAllocation,
+  spendProfilePercents,
+  SPEND_DRAWS,
 } from './data.js';
 
 function emptyBanks() {
@@ -79,6 +82,8 @@ function resetTurnState(player) {
     bonusSegment: false,
     freeNightAvailable: false,
     diningBonusUsed: false,
+    // Lifestyle roll: which spend categories appear this turn
+    spendRoll: rollSpendAllocation(player.character),
   };
 }
 
@@ -416,50 +421,23 @@ export class Game {
   }
 
   /**
-   * Auto-spend: put budget on categories where held cards earn the most.
-   * With no cards, still allocates to "everything" but earn rate is 0×.
+   * This turn's spending = character lifestyle roll (category appearance probs).
+   * Earn rates still come only from credit cards (0× without a card).
    */
   autoAllocate(player) {
-    const budget = GAME_CONFIG.budgetPerTurn;
-    const cats = [
-      'dining',
-      'groceries',
-      'gas',
-      'travel',
-      'transit',
-      'rent',
-      'hotels',
-      'flights',
-      'everything',
-    ];
-    if (!player.cards.length) {
-      return { everything: budget };
+    if (player.turn && player.turn.spendRoll) {
+      return { ...player.turn.spendRoll };
     }
+    return rollSpendAllocation(player.character);
+  }
 
-    const scored = cats
-      .map((cat) => ({ cat, rate: this.bestEarnRate(player, cat).rate }))
-      .filter((x) => x.rate > 0)
-      .sort((a, b) => b.rate - a.rate);
-
-    if (!scored.length) {
-      return { everything: budget };
-    }
-
-    // Dump all spend into the best-earning category (ties split evenly)
-    const bestRate = scored[0].rate;
-    const tops = scored.filter((x) => x.rate === bestRate);
-    const alloc = {};
-    let left = budget;
-    tops.forEach((x, i) => {
-      if (i === tops.length - 1) {
-        alloc[x.cat] = left;
-      } else {
-        const amt = Math.floor(budget / tops.length);
-        alloc[x.cat] = amt;
-        left -= amt;
-      }
-    });
-    return alloc;
+  /** Re-roll lifestyle spend for this turn (optional UI action, free). */
+  rerollSpend() {
+    const p = this.currentPlayer;
+    if (p.turn.incomeDone) throw new Error('Income already done');
+    p.turn.spendRoll = rollSpendAllocation(p.character);
+    this.addLog(`${p.name} re-rolls lifestyle spend for this turn.`);
+    return { ...p.turn.spendRoll };
   }
 
   // ——— Actions ———
@@ -961,6 +939,8 @@ export class Game {
               hotelMult: p.turn.hotelMult,
               freeNightAvailable: p.turn.freeNightAvailable,
               pendingTickets: p.turn.pendingTickets,
+              spendRoll: p.turn.spendRoll ? { ...p.turn.spendRoll } : null,
+              spendProfile: spendProfilePercents(p.character.spendProfile),
             }
           : null,
       })),
@@ -978,4 +958,7 @@ export {
   GAME_CONFIG,
   listFlightOptions,
   resolveItinerary,
+  spendProfilePercents,
+  rollSpendAllocation,
+  SPEND_DRAWS,
 };

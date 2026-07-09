@@ -813,6 +813,49 @@ button {
   gap: 0.4rem;
 }
 
+.spend-roll-box {
+  background: var(--navy-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  margin: 0.5rem 0 0.65rem;
+}
+
+.spend-roll-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+  margin-bottom: 0.4rem;
+}
+
+.spend-roll-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.spend-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--navy);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.25rem 0.45rem;
+  font-size: 0.78rem;
+}
+
+.spend-chip .spend-cat {
+  color: var(--cream-dim);
+  text-transform: capitalize;
+}
+
+.spend-chip strong {
+  font-family: var(--mono);
+  color: var(--gold-soft);
+}
+
 .char-tip {
   font-size: 0.8rem;
   color: var(--cream-dim);

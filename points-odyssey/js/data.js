@@ -72,9 +72,15 @@ export const CATEGORIES = [
 ];
 
 /**
- * Characters no longer grant spend multipliers — earn rates come only from credit cards.
- * Default earn without a card: 0× on everything.
+ * Characters shape which spend categories tend to appear (weights → probability).
+ * Earn rates still come only from credit cards (0× without a card).
+ *
+ * spendProfile: relative weights for category appearance when rolling income.
+ * Each income phase rolls SPEND_DRAWS chunks of the budget, each chunk lands
+ * on a category sampled proportional to these weights.
  */
+export const SPEND_DRAWS = 5; // how many budget chunks are rolled per income
+
 export const CHARACTERS = [
   {
     id: 'consultant',
@@ -85,6 +91,15 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'travel_focus',
     specialDesc: 'When you transfer to United, gain +10% miles on that transfer.',
+    // Heavy travel + dining (client meals), some flights/hotels
+    spendProfile: {
+      travel: 35,
+      dining: 25,
+      flights: 15,
+      hotels: 10,
+      transit: 8,
+      everything: 7,
+    },
   },
   {
     id: 'family',
@@ -95,6 +110,14 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'family_nights',
     specialDesc: '+1 bonus VP on every hotel stay.',
+    spendProfile: {
+      groceries: 35,
+      gas: 20,
+      dining: 15,
+      everything: 12,
+      travel: 10,
+      hotels: 8,
+    },
   },
   {
     id: 'nomad',
@@ -105,6 +128,14 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'cheap_flight',
     specialDesc: 'First flight each turn costs 10% fewer miles.',
+    spendProfile: {
+      transit: 30,
+      travel: 25,
+      dining: 15,
+      hotels: 12,
+      flights: 10,
+      everything: 8,
+    },
   },
   {
     id: 'foodie',
@@ -115,6 +146,13 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'dining_bonus',
     specialDesc: 'If you spend any budget on dining this turn, +500 bank pts once (needs a card to choose bank).',
+    spendProfile: {
+      dining: 45,
+      groceries: 25,
+      everything: 12,
+      travel: 10,
+      transit: 8,
+    },
   },
   {
     id: 'landlord',
@@ -125,6 +163,14 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'rent_day',
     specialDesc: 'Bilt earn is always +25% for you (stacks with Rent Day events).',
+    spendProfile: {
+      rent: 50,
+      dining: 15,
+      everything: 12,
+      travel: 10,
+      gas: 8,
+      groceries: 5,
+    },
   },
   {
     id: 'executive',
@@ -135,8 +181,57 @@ export const CHARACTERS = [
     cardLimitBonus: 1,
     special: 'extra_card',
     specialDesc: 'Hold up to 4 credit cards (others cap at 3).',
+    spendProfile: {
+      flights: 25,
+      hotels: 25,
+      dining: 20,
+      travel: 15,
+      everything: 10,
+      transit: 5,
+    },
   },
 ];
+
+/** Normalize spendProfile weights to percentages (0–100). */
+export function spendProfilePercents(profile) {
+  const entries = Object.entries(profile || { everything: 1 });
+  const sum = entries.reduce((s, [, w]) => s + w, 0) || 1;
+  const out = {};
+  for (const [cat, w] of entries) {
+    out[cat] = Math.round((w / sum) * 1000) / 10; // one decimal
+  }
+  return out;
+}
+
+/**
+ * Roll this turn's spending: budget split into SPEND_DRAWS chunks,
+ * each chunk assigned to a category ~ proportional to spendProfile weights.
+ */
+export function rollSpendAllocation(character, budget = GAME_CONFIG.budgetPerTurn, draws = SPEND_DRAWS) {
+  const profile = character.spendProfile || { everything: 1 };
+  const entries = Object.entries(profile).filter(([, w]) => w > 0);
+  const totalW = entries.reduce((s, [, w]) => s + w, 0) || 1;
+  const chunk = Math.floor(budget / draws);
+  const alloc = {};
+  let assigned = 0;
+
+  function pickCategory() {
+    let r = Math.random() * totalW;
+    for (let i = 0; i < entries.length; i++) {
+      r -= entries[i][1];
+      if (r <= 0) return entries[i][0];
+    }
+    return entries[entries.length - 1][0];
+  }
+
+  for (let i = 0; i < draws; i++) {
+    const cat = pickCategory();
+    const amt = i === draws - 1 ? budget - assigned : chunk;
+    alloc[cat] = (alloc[cat] || 0) + amt;
+    assigned += amt;
+  }
+  return alloc;
+}
 
 export const CREDIT_CARDS = [
   // Chase

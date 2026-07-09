@@ -25,19 +25,38 @@ function fmt(n) {
   return Math.round(n).toLocaleString();
 }
 
-/** Format character special skills for tooltips (no spend multipliers) */
+function formatSpendProfileLines(c) {
+  const profile = c.spendProfile || { everything: 1 };
+  const sum = Object.values(profile).reduce((s, w) => s + w, 0) || 1;
+  return Object.entries(profile)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, w]) => {
+      const pct = Math.round((w / sum) * 100);
+      return { cat, pct, w };
+    });
+}
+
+/** Format character special + spend appearance probs for tooltips */
 function characterSkillsHtml(c) {
   const cardLimit = GAME_CONFIG.defaultCardLimit + (c.cardLimitBonus || 0);
   const home = CITIES[c.homeCity] ? CITIES[c.homeCity].name : c.homeCity;
+  const lines = formatSpendProfileLines(c);
+  const mults = lines
+    .map((x) => `<li><strong>${x.pct}%</strong> ${x.cat}</li>`)
+    .join('');
   return `
     <div class="skill-tooltip" role="tooltip">
       <div class="skill-tip-name">${c.name}</div>
       <p class="skill-tip-blurb">${c.blurb || ''}</p>
       <div class="skill-tip-section">
+        <span class="skill-tip-label">Spend appearance (chance)</span>
+        <ul class="skill-mults">${mults}</ul>
+      </div>
+      <div class="skill-tip-section">
         <span class="skill-tip-label">Special skill</span>
         <p class="skill-tip-special">${c.specialDesc}</p>
       </div>
-      <p class="skill-tip-note">Spend earn rates come only from credit cards (0× without a card).</p>
+      <p class="skill-tip-note">Each income roll draws spend categories by these odds. Earn rates come only from credit cards (0× without a card).</p>
       <div class="skill-tip-meta">
         <span>Home: ${home}</span>
         <span>Cards: up to ${cardLimit}</span>
@@ -47,7 +66,23 @@ function characterSkillsHtml(c) {
 }
 
 function characterSkillsTitle(c) {
-  return `${c.name}\nSkill: ${c.specialDesc}\nEarn: credit cards only (default 0×)\nHome: ${c.homeCity}`;
+  const lines = formatSpendProfileLines(c)
+    .slice(0, 4)
+    .map((x) => `${x.cat} ${x.pct}%`)
+    .join(', ');
+  return `${c.name}\nSpend odds: ${lines}\nSkill: ${c.specialDesc}\nEarn: credit cards only (0× default)`;
+}
+
+function formatSpendRollHtml(roll) {
+  if (!roll) return '<span class="muted">No spend rolled</span>';
+  return Object.entries(roll)
+    .filter(([, amt]) => amt > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(
+      ([cat, amt]) =>
+        `<div class="spend-chip"><span class="spend-cat">${cat}</span><strong>$${fmt(amt)}</strong></div>`
+    )
+    .join('');
 }
 
 function showScreen(id) {
@@ -401,16 +436,20 @@ function renderPhasePanel(cur, snap) {
   if (!cur.turn.incomeDone) {
     panel.innerHTML = `
       <h3>Phase 2 — Income</h3>
-      <p>Allocate your $${fmt(GAME_CONFIG.budgetPerTurn)} budget. Earn rates come from <strong>credit cards only</strong> (0× with no card).</p>
-      <p class="char-tip"><em>${cur.character.name}:</em> ${cur.character.specialDesc}</p>
+      <p class="char-tip"><em>${cur.character.name}</em> lifestyle roll — categories appear by your spend odds. Earn = spend × <strong>card rate</strong> (0× without a card).</p>
+      <div class="spend-roll-box">
+        <div class="spend-roll-label">This turn’s spending</div>
+        <div class="spend-roll-chips">${formatSpendRollHtml(cur.turn.spendRoll)}</div>
+      </div>
       ${
         !cur.cards.length
           ? `<p class="bonus-tag" style="color:var(--danger)!important">No cards held — income will earn 0 pts. Apply for a card after income!</p>`
           : ''
       }
       <div class="income-actions">
-        <button type="button" class="btn primary" id="btn-auto-income">Auto-spend (best card categories)</button>
-        <button type="button" class="btn" id="btn-custom-income">Custom allocation…</button>
+        <button type="button" class="btn primary" id="btn-auto-income">Earn points on this spend</button>
+        <button type="button" class="btn" id="btn-reroll-spend">Re-roll lifestyle spend</button>
+        <button type="button" class="btn" id="btn-custom-income">Adjust allocation…</button>
       </div>
     `;
     $('#btn-auto-income').onclick = () => {
@@ -418,6 +457,15 @@ function renderPhasePanel(cur, snap) {
         const p = game.currentPlayer;
         game.doIncome(game.autoAllocate(p));
         renderAll();
+      } catch (e) {
+        toast(e.message, true);
+      }
+    };
+    $('#btn-reroll-spend').onclick = () => {
+      try {
+        game.rerollSpend();
+        renderAll();
+        toast('Lifestyle spend re-rolled');
       } catch (e) {
         toast(e.message, true);
       }
@@ -534,44 +582,57 @@ function closeModal() {
 }
 
 function openIncomeModal() {
-  const cats = [
-    'dining',
-    'groceries',
-    'gas',
-    'travel',
-    'transit',
-    'rent',
-    'hotels',
-    'flights',
-    'everything',
-  ];
   const p = game.currentPlayer;
+  const roll = (p.turn && p.turn.spendRoll) || {};
+  // Categories that can appear for this character + any rolled
+  const profileCats = Object.keys(p.character.spendProfile || { everything: 1 });
+  const cats = [
+    ...new Set([
+      ...profileCats,
+      ...Object.keys(roll),
+      'dining',
+      'groceries',
+      'gas',
+      'travel',
+      'transit',
+      'rent',
+      'hotels',
+      'flights',
+      'everything',
+    ]),
+  ];
   const rates = cats.map((c) => {
     const r = game.bestEarnRate(p, c);
-    return { c, rate: r.rate, card: r.card ? r.card.name : '—' };
+    return {
+      c,
+      rate: r.rate,
+      card: r.card ? r.card.name : '—',
+      rolled: roll[c] || 0,
+    };
   });
 
   openModal(
-    'Custom income allocation',
+    'Adjust income allocation',
     `
-      <p>Total must be ≤ $${GAME_CONFIG.budgetPerTurn}. Points = spend × <strong>card</strong> earn rate (0× without a card).</p>
+      <p>Pre-filled from this turn’s lifestyle roll. Total ≤ $${GAME_CONFIG.budgetPerTurn}. Earn = spend × <strong>card</strong> rate (0× without a card).</p>
       ${rates
         .map(
           (x) => `
         <label class="field">
-          ${x.c} <span class="muted">(${x.rate}× via ${x.card})</span>
-          <input type="number" min="0" max="${GAME_CONFIG.budgetPerTurn}" value="0" data-cat="${x.c}" />
+          ${x.c}
+          <span class="muted">(${x.rate}× ${x.card}${x.rolled ? ` · rolled $${fmt(x.rolled)}` : ''})</span>
+          <input type="number" min="0" max="${GAME_CONFIG.budgetPerTurn}" value="${x.rolled || 0}" data-cat="${x.c}" />
         </label>
       `
         )
         .join('')}
-      <p class="muted">Tip: put budget on the highest × categories from your cards.</p>
     `,
     () => {
       const alloc = {};
       $$('#modal-body [data-cat]').forEach((inp) => {
         alloc[inp.dataset.cat] = +inp.value || 0;
       });
+      // Keep turn roll in sync for display consistency after? income ends anyway
       game.doIncome(alloc);
     }
   );

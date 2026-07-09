@@ -45,20 +45,22 @@ Game systems are **inspired by** real US transfer ecosystems (Chase Ultimate Rew
 
 ---
 
-## Characters (special skills only)
+## Characters (lifestyle spend odds + special skills)
 
-Characters do **not** grant spend multipliers. **Earn rates come only from credit cards.** Without a card, earn rate is **0× on everything**.
+Characters do **not** grant earn multipliers. **Earn rates come only from credit cards** (0× without a card).
 
-| Character | Theme | Special skill |
-|-----------|-------|---------------|
-| **The Consultant** | Business travel | +10% miles when transferring to United |
-| **The Family** | Household life | +1 bonus VP on every hotel stay |
-| **The Nomad** | Remote work | First flight each turn costs 10% fewer miles |
-| **The Foodie** | Culinary | +500 bank pts once per turn if any dining spend (needs a card for bank) |
-| **The Landlord** | Real estate | Always +25% Bilt earn (stacks with Rent Day events) |
-| **The Executive** | Premium lifestyle | Hold up to **4** credit cards (others cap at 3) |
+What characters *do* change is the **probability that each spend category appears** during Income. Each turn the game rolls your **$2,000** budget into several chunks; each chunk lands on a category weighted by your lifestyle profile.
 
-**Spend categories:** Dining, Groceries, Gas, Travel, Transit, Rent, Hotels, Flights, Everything (catch-all). Points earned = dollars spent in category × best card earn rate for that category.
+| Character | Spend appearance (approx.) | Special skill |
+|-----------|----------------------------|---------------|
+| **The Consultant** | Travel, dining, flights/hotels | +10% miles when transferring to United |
+| **The Family** | Groceries, gas, dining, some travel | +1 bonus VP on every hotel stay |
+| **The Nomad** | Transit, travel, hotels/flights | First flight each turn costs 10% fewer miles |
+| **The Foodie** | Dining, groceries dominant | +500 bank pts if any dining spend this turn |
+| **The Landlord** | Rent dominant, some dining/travel | Always +25% Bilt earn |
+| **The Executive** | Flights, hotels, dining, travel | Hold up to **4** credit cards |
+
+**Points earned** = dollars in category × best **credit card** earn rate for that category.
 
 ---
 
@@ -162,8 +164,8 @@ Example events:
 
 ### 2. Income Phase (mandatory)
 
-1. Allocate your **$2,000** budget across spend categories (or auto-spend into your best card categories).
-2. For each dollar spent, earn points on the **best credit card** you hold for that category (highest earn rate). **No card → 0×** (earn nothing).
+1. Roll **lifestyle spend**: category chunks appear according to your character’s probability profile (you may re-roll once via UI, or fine-tune allocation).
+2. For each dollar in a category, earn points on the **best credit card** you hold for that category. **No card → 0×**.
 3. Track **signup bonus progress** toward min-spend on the card that earned the spend.
 
 ### 3. Action Phase (choose **2 actions**)
