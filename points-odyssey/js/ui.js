@@ -15,6 +15,7 @@ import {
 } from './game.js';
 import { BANKS, HOTELS, AIRLINES, getRoute } from './data.js';
 import { playBotActions } from './bot.js';
+import { initMusicUI, playTrack, unlockMusic } from './music.js';
 
 const game = new Game();
 let setupSelections = [];
@@ -95,6 +96,14 @@ function formatSpendRollHtml(roll) {
 function showScreen(id) {
   $$('.screen').forEach((s) => s.classList.remove('active'));
   $(`#${id}`)?.classList.add('active');
+  // Music beds by screen
+  if (id === 'screen-setup' || id === 'screen-rules') {
+    playTrack('menu');
+  } else if (id === 'screen-game') {
+    playTrack('play');
+  } else if (id === 'screen-gameover') {
+    playTrack('hotel');
+  }
 }
 
 function toast(msg, isError = false) {
@@ -1504,5 +1513,15 @@ function wireNav() {
 
 // Init
 wireNav();
+initMusicUI();
 renderSetup();
 showScreen('screen-setup');
+// Start menu music after first click (also handled in unlockMusic)
+document.addEventListener(
+  'click',
+  () => {
+    unlockMusic();
+    playTrack('menu');
+  },
+  { once: true }
+);

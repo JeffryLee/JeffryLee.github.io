@@ -38,6 +38,8 @@ Open **http://localhost:8080**
 | `js/data.js` | Cities, routes, cards, events, achievements |
 | `js/game.js` | Game engine |
 | `js/ui.js` | Hotseat UI |
+| `js/music.js` | Background music (menu / play) |
+| `assets/music/` | Kevin MacLeod tracks (CC BY 4.0) — see `CREDITS.md` |
 | `assets/` | Logo, characters, map, event art |
 
 ## Design inspiration (real-world flavor)
@@ -50,6 +52,17 @@ Transfer partners are **simplified** for play from publicly documented US ecosys
 - **Bilt Rewards** → United + American + Hyatt/Marriott flexibility; rent earn  
 
 US map cities and airline corridors reflect major hubs (ATL, DFW, ORD, DEN, SFO, etc.).
+
+## Music
+
+| File | Track | Artist |
+|------|--------|--------|
+| `menu-loop.mp3` | Lobby Time | Kevin MacLeod |
+| `play-loop.mp3` | Airport Lounge | Kevin MacLeod |
+| `city-loop.mp3` | George Street Shuffle | Kevin MacLeod |
+| `hotel-loop.mp3` | Casa Bossa Nova | Kevin MacLeod |
+
+Music by Kevin MacLeod (incompetech.com) — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). See `assets/music/CREDITS.md`.
 
 ## License
 
