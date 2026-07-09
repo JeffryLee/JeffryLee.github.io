@@ -1,472 +1,316 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Zhuqi Li | Member of Technical Staff @ xAI</title>
-  <meta name="description" content="Zhuqi Li — Member of Technical Staff at xAI. LLM inference systems, computer-use agents, RL for multimodal agents. Ph.D. Princeton University." />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="author" content="Zhuqi Li" />
-  <meta property="og:title" content="Zhuqi Li | MTS @ xAI" />
+  <meta name="description" content="Member of Technical Staff at xAI. LLM inference systems, computer-use agents, and RL for multimodal agents. Ph.D. Princeton University." />
+  <meta name="theme-color" content="#173f35" />
+  <title>Zhuqi Li</title>
+  <meta property="og:title" content="Zhuqi Li" />
   <meta property="og:description" content="LLM inference, computer-use agents, and RL for multimodal agents." />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="assets/zhuqi-li.jpg" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/academicons/1.9.4/css/academicons.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="noise" aria-hidden="true"></div>
-
-  <header class="site-header" id="top">
-    <nav class="nav">
-      <a class="logo" href="#top">Zhuqi Li</a>
-      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
-        <span></span><span></span>
+<body id="top">
+  <nav class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a class="brand" href="#top">Zhuqi Li</a>
+      <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <i class="fas fa-bars"></i>
       </button>
       <ul class="nav-links" id="navLinks">
-        <li><a href="#about">About</a></li>
+        <li><a href="#top">Home</a></li>
         <li><a href="#experience">Experience</a></li>
+        <li><a href="#research">Research</a></li>
         <li><a href="#publications">Publications</a></li>
-        <li><a href="#education">Education</a></li>
         <li><a href="#awards">Awards</a></li>
-        <li><a class="nav-cta" href="assets/CV-Zhuqi-Li.pdf" target="_blank" rel="noopener">CV</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li class="nav-cta-item">
+          <a class="btn btn-primary" href="assets/CV-Zhuqi-Li.pdf" target="_blank" rel="noopener">CV</a>
+        </li>
       </ul>
-    </nav>
-  </header>
+    </div>
+  </nav>
 
   <main>
     <!-- Hero -->
     <section class="hero">
-      <div class="hero-bg" aria-hidden="true"></div>
-      <div class="hero-inner">
-        <div class="hero-copy">
-          <p class="eyebrow">Member of Technical Staff · xAI</p>
-          <h1>Zhuqi Li</h1>
-          <p class="hero-tagline">
-            Building high-performance inference systems and reinforcement learning
-            for LLM and multimodal agents.
-          </p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="mailto:zhuqi.jeffery.li@gmail.com">Get in touch</a>
-            <a class="btn btn-ghost" href="assets/CV-Zhuqi-Li.pdf" target="_blank" rel="noopener">Download CV</a>
+      <div class="container">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="kicker">Member of Technical Staff · xAI</p>
+            <h1>Zhuqi Li</h1>
+            <p class="lead">
+              I build high-performance <strong>LLM inference systems</strong> and
+              <strong>reinforcement learning pipelines</strong> for computer-use and multimodal agents.
+              My work spans serving frameworks, post-training infrastructure, and production systems at scale.
+            </p>
+            <p class="hero-note">
+              Previously, I was a Senior Research Scientist at ByteDance, where I worked on the
+              <strong>xLLM</strong> inference framework and TikTok video systems.
+            </p>
+            <p class="hero-note">
+              I received my Ph.D. in Computer Science from
+              <a href="https://www.cs.princeton.edu/" target="_blank" rel="noopener">Princeton University</a>,
+              advised by Professor
+              <a href="https://www.cs.princeton.edu/~kylej/" target="_blank" rel="noopener">Kyle Jamieson</a>,
+              and my B.S. (Summa Cum Laude) from Peking University.
+            </p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="#publications">View Publications</a>
+              <a class="btn btn-secondary" href="#experience">Experience</a>
+              <a class="btn btn-secondary" href="https://scholar.google.com/citations?user=y3kfeMYAAAAJ&hl=en" target="_blank" rel="noopener">Google Scholar</a>
+            </div>
+            <ul class="social" aria-label="Social links">
+              <li><a href="mailto:zhuqi.jeffery.li@gmail.com" aria-label="Email"><i class="fas fa-envelope"></i></a></li>
+              <li><a href="https://www.linkedin.com/in/zhuqi-li-48a8a9bb/" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a></li>
+              <li><a href="https://github.com/JeffryLee" target="_blank" rel="noopener" aria-label="GitHub"><i class="fab fa-github"></i></a></li>
+              <li><a href="https://scholar.google.com/citations?user=y3kfeMYAAAAJ&hl=en" target="_blank" rel="noopener" aria-label="Google Scholar"><i class="ai ai-google-scholar"></i></a></li>
+            </ul>
           </div>
-          <div class="socials">
-            <a href="https://www.linkedin.com/in/zhuqi-li-48a8a9bb/" target="_blank" rel="noopener" aria-label="LinkedIn">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-            </a>
-            <a href="https://scholar.google.com/citations?user=y3kfeMYAAAAJ&hl=en" target="_blank" rel="noopener" aria-label="Google Scholar">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 24a7 7 0 110-14 7 7 0 010 14zm0-24L0 9.5l4.838 3.94A8 8 0 0112 9a8 8 0 017.162 4.44L24 9.5 12 0z"/></svg>
-            </a>
-            <a href="https://github.com/JeffryLee" target="_blank" rel="noopener" aria-label="GitHub">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-            </a>
-            <a href="mailto:zhuqi.jeffery.li@gmail.com" aria-label="Email">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-            </a>
-          </div>
-        </div>
-        <div class="hero-photo">
-          <div class="photo-ring">
-            <img src="assets/zhuqi-li.jpg" alt="Portrait of Zhuqi Li" width="280" height="280" />
+          <div class="hero-photo">
+            <div class="portrait-card">
+              <img class="portrait" src="assets/zhuqi-li.jpg" alt="Zhuqi Li" />
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- About -->
-    <section class="section" id="about">
+    <!-- Highlights -->
+    <section class="section" id="highlights">
       <div class="container">
-        <div class="section-head">
-          <p class="eyebrow">About</p>
-          <h2>Systems for intelligent agents at scale</h2>
-        </div>
-        <div class="about-grid">
-          <div class="about-lead">
-            <p>
-              I am a Member of Technical Staff at <strong>xAI</strong>, working on
-              <strong>LLM inference for computer-use agents</strong> and
-              <strong>reinforcement learning for Imagine agents</strong>, including reward modeling.
-            </p>
-            <p>
-              Previously, I was a Senior Research Scientist at <strong>ByteDance</strong>, where I
-              built production LLM / VLM inference on <strong>xLLM</strong> and post-training
-              infrastructure with <strong>verl</strong>—shipping models such as Qwen, Seed, DeepSeek-R1,
-              and Wan across thousands of GPUs.
-            </p>
-            <p>
-              I received my Ph.D. in Computer Science from
-              <a href="https://www.cs.princeton.edu/" target="_blank" rel="noopener">Princeton University</a>,
-              advised by Professor
-              <a href="https://www.cs.princeton.edu/~kylej/" target="_blank" rel="noopener">Kyle Jamieson</a>.
-              My earlier research spanned cross-layer video delivery, wireless systems, and
-              large-scale video analytics—work published at
-              <strong>SIGCOMM</strong>, <strong>NSDI</strong>, and related venues.
-            </p>
-          </div>
-          <aside class="focus-card">
-            <h3>Current focus</h3>
-            <ul class="focus-list">
-              <li>
-                <span class="focus-icon">⚡</span>
-                <div>
-                  <strong>Agent inference</strong>
-                  <p>Real-time computer-use agent serving with SGLang</p>
-                </div>
-              </li>
-              <li>
-                <span class="focus-icon">🎯</span>
-                <div>
-                  <strong>RL for Imagine</strong>
-                  <p>Reinforcement learning and reward models for multimodal generation</p>
-                </div>
-              </li>
-              <li>
-                <span class="focus-icon">🏗️</span>
-                <div>
-                  <strong>LLM systems</strong>
-                  <p>xLLM, vLLM, SGLang, verl, large-scale post-training</p>
-                </div>
-              </li>
-            </ul>
-          </aside>
-        </div>
-
-        <div class="stats">
-          <div class="stat">
-            <span class="stat-value">24×</span>
-            <span class="stat-label">CUA inference speedup</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">2000+</span>
-            <span class="stat-label">A100-eq GPUs in production</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">339</span>
-            <span class="stat-label">Google Scholar citations</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">SIGCOMM</span>
-            <span class="stat-label">&amp; dual NSDI publications</span>
-          </div>
+        <h2 class="section-title">Highlights</h2>
+        <div class="grid grid-3">
+          <article class="card"><p><strong>24× speedup</strong> for computer-use agent inference on SGLang (1 → 24 FPS)</p></article>
+          <article class="card"><p><strong>2000+ A100-eq GPUs</strong> — VLM inference on xLLM in production at ByteDance</p></article>
+          <article class="card"><p><strong>SIGCOMM 2025</strong> — TLadder: video ladder optimization at billion scale</p></article>
+          <article class="card"><p><strong>NSDI 2023 &amp; 2019</strong> — Dashlet and programmable radio environment</p></article>
+          <article class="card"><p><strong>SIGMOBILE Research Highlights</strong>, 2019</p></article>
+          <article class="card"><p><strong>339 citations</strong> · h-index 8 on Google Scholar</p></article>
         </div>
       </div>
     </section>
 
     <!-- Experience -->
-    <section class="section section-alt" id="experience">
+    <section class="section" id="experience">
       <div class="container">
-        <div class="section-head">
-          <p class="eyebrow">Experience</p>
-          <h2>From research to production LLM systems</h2>
-        </div>
+        <h2 class="section-title">Experience</h2>
 
-        <div class="timeline">
-          <!-- xAI -->
-          <article class="exp-card featured">
-            <div class="exp-header">
-              <div>
-                <p class="exp-org">xAI</p>
-                <h3>Member of Technical Staff</h3>
-                <p class="exp-role">LLM Agents · Inference · RL</p>
-              </div>
-              <time datetime="2025-11">11/2025 – Present</time>
+        <article class="panel exp-panel">
+          <div class="exp-head">
+            <div>
+              <p class="exp-org">xAI</p>
+              <h3>Member of Technical Staff</h3>
             </div>
-            <div class="exp-body">
-              <div class="exp-block">
-                <h4>Inference for Computer-Use Agents</h4>
-                <ul>
-                  <li>
-                    Designed and implemented computer-use agent model support in in-house
-                    <strong>SGLang</strong>, optimizing the inference engine for a
-                    <strong>24× speedup</strong> (1 → 24 FPS), enabling real-time inference on 720p video.
-                  </li>
-                </ul>
-              </div>
-              <div class="exp-block">
-                <h4>RL for Imagine Agent &amp; Reward Modeling</h4>
-                <ul>
-                  <li>
-                    Building reinforcement learning pipelines for the <strong>Imagine</strong> multimodal
-                    agent, including reward model design and training for high-quality generation and control.
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </article>
-
-          <!-- ByteDance -->
-          <article class="exp-card">
-            <div class="exp-header">
-              <div>
-                <p class="exp-org">ByteDance / TikTok</p>
-                <h3>Senior Research Scientist</h3>
-                <p class="exp-role">xLLM Inference Framework · Video Systems</p>
-              </div>
-              <time datetime="2023-02">02/2023 – 11/2025</time>
-            </div>
-            <div class="exp-body">
-              <div class="exp-block">
-                <h4>xLLM Inference Framework</h4>
-                <ul>
-                  <li>
-                    Implemented vision-language model support (Qwen2.5-VL / Seed1.5-VL) on xLLM,
-                    achieving <strong>2–15% higher throughput</strong> at the same latency vs. vLLM v1
-                    across GPUs. Adopted in production with <strong>2000+ A100-equivalent</strong> compute.
-                  </li>
-                  <li>
-                    Shipped Wan 2.1 model serving with TP+SP on 8×H20 GPUs (14B).
-                  </li>
-                  <li>
-                    Built post-training infrastructure for <strong>verl + xLLM</strong> (weight transfer &amp;
-                    memory management); enabled PPO and GRPO post-training on DeepSeek-R1 671B and Qwen3 235B.
-                  </li>
-                  <li>
-                    Added tool-calling support for agentic workloads; deployed on systems using
-                    <strong>500+ A100-equivalent</strong> compute.
-                  </li>
-                  <li>
-                    Developed performance and accuracy benchmarking for xLLM; automated regression detection
-                    and caught 20+ critical bugs pre-merge.
-                  </li>
-                </ul>
-              </div>
-              <div class="exp-block">
-                <h4>TikTok Video Processing</h4>
-                <ul>
-                  <li>
-                    Led end-to-end design of Project CAE (context-adaptive video processing):
-                    play time / user +0.13%, rebuffer / play −4.7%, ads value +0.437%.
-                    Paper accepted at <strong>SIGCOMM 2025</strong>.
-                  </li>
-                  <li>
-                    Led ROI-driven video transcoding scheduling, reducing total transcoding CPU cores by
-                    <strong>8.8%</strong> with no degradation in playback quality.
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </article>
-
-          <!-- Princeton -->
-          <article class="exp-card">
-            <div class="exp-header">
-              <div>
-                <p class="exp-org">Princeton University</p>
-                <h3>Ph.D. Researcher</h3>
-                <p class="exp-role">Advised by Kyle Jamieson · Wireless &amp; Video Systems</p>
-              </div>
-              <time datetime="2017-09">09/2017 – 01/2023</time>
-            </div>
-            <div class="exp-body">
-              <ul>
-                <li>
-                  <strong>Dashlet</strong> (NSDI 2023): short-video streaming with user swipe modeling—
-                  improved QoE by 28–101% and cut wasted video data by 30% vs. TikTok baselines.
-                </li>
-                <li>
-                  <strong>REITS</strong> (HotMobile 2021): reflective tags for safer self-driving sensing;
-                  3.63× FMCW radar distance. Covered by <em>BBC</em> and <em>New Scientist</em>.
-                </li>
-                <li>
-                  <strong>LAIA</strong> (NSDI 2019): programmable radio environment—51.4% Shannon capacity
-                  and 24% TCP throughput gains.
-                </li>
-              </ul>
-            </div>
-          </article>
-
-          <!-- Internships row -->
-          <div class="exp-mini-grid">
-            <article class="exp-mini">
-              <p class="exp-org">Microsoft Research</p>
-              <h3>Research Intern</h3>
-              <time>2019 – 2020</time>
-              <p>mmWave multi-hop video analytics (Spider). SEC 2021; US patent 11272423.</p>
-            </article>
-            <article class="exp-mini">
-              <p class="exp-org">Meta (Facebook)</p>
-              <h3>Software Engineer Intern</h3>
-              <time>2021</time>
-              <p>MLP ensemble for wireless quality prediction on Facebook app; −23–27% MSE.</p>
-            </article>
-            <article class="exp-mini">
-              <p class="exp-org">Microsoft Research Asia</p>
-              <h3>Research Intern</h3>
-              <time>2016 – 2017</time>
-              <p>Indoor navigation systems; Path-Guide commercialized research.</p>
-            </article>
-            <article class="exp-mini">
-              <p class="exp-org">Carnegie Mellon</p>
-              <h3>Visiting Scholar</h3>
-              <time>2016</time>
-              <p>HCII — human–computer interaction research visit.</p>
-            </article>
+            <time>11/2025 – Present</time>
           </div>
+          <div class="theme-block">
+            <h4>Inference for Computer-Use Agents</h4>
+            <ul class="bullet-list">
+              <li>Designed and implemented computer-use agent support in in-house <strong>SGLang</strong>, optimizing inference for a <strong>24× speedup</strong> (1 → 24 FPS) and enabling real-time inference on 720p video.</li>
+            </ul>
+          </div>
+          <div class="theme-block">
+            <h4>RL for Imagine Agent &amp; Reward Modeling</h4>
+            <ul class="bullet-list">
+              <li>Building reinforcement learning pipelines for the <strong>Imagine</strong> multimodal agent, including reward model design and training for high-quality generation and control.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="panel exp-panel">
+          <div class="exp-head">
+            <div>
+              <p class="exp-org">ByteDance / TikTok</p>
+              <h3>Senior Research Scientist</h3>
+            </div>
+            <time>02/2023 – 11/2025</time>
+          </div>
+          <div class="theme-block">
+            <h4>xLLM Inference Framework</h4>
+            <ul class="bullet-list">
+              <li>Implemented VLM support (Qwen2.5-VL / Seed1.5-VL) on xLLM with <strong>2–15% higher throughput</strong> at the same latency vs. vLLM v1; adopted with <strong>2000+ A100-equivalent</strong> compute.</li>
+              <li>Shipped Wan 2.1 serving with TP+SP on 8×H20 GPUs (14B).</li>
+              <li>Built post-training infra for <strong>verl + xLLM</strong>; enabled PPO and GRPO on DeepSeek-R1 671B and Qwen3 235B.</li>
+              <li>Added tool-calling for agentic workloads; deployed on <strong>500+ A100-equivalent</strong> compute.</li>
+              <li>Automated performance/accuracy regression testing; caught 20+ critical bugs pre-merge.</li>
+            </ul>
+          </div>
+          <div class="theme-block">
+            <h4>TikTok Video Processing</h4>
+            <ul class="bullet-list">
+              <li>Led Project CAE (context-adaptive video processing): play time/user +0.13%, rebuffer −4.7%, ads value +0.437%. Paper at <strong>SIGCOMM 2025</strong>.</li>
+              <li>Led ROI-driven transcoding scheduling, reducing total CPU cores by <strong>8.8%</strong> with unchanged playback quality.</li>
+            </ul>
+          </div>
+        </article>
+
+        <div class="grid grid-2 exp-mini-grid">
+          <article class="panel">
+            <p class="exp-org">Princeton University</p>
+            <h3>Ph.D. Researcher</h3>
+            <p class="muted-sm">09/2017 – 01/2023 · Kyle Jamieson</p>
+            <p class="muted">Cross-layer video delivery and wireless systems: Dashlet (NSDI’23), REITS (HotMobile’21), LAIA (NSDI’19).</p>
+          </article>
+          <article class="panel">
+            <p class="exp-org">Microsoft Research</p>
+            <h3>Research Intern</h3>
+            <p class="muted-sm">2019 – 2020 · Mobility &amp; Networking</p>
+            <p class="muted">mmWave multi-hop video analytics (Spider). SEC 2021; US Patent 11272423.</p>
+          </article>
+          <article class="panel">
+            <p class="exp-org">Meta (Facebook)</p>
+            <h3>Software Engineer Intern</h3>
+            <p class="muted-sm">2021 · Connectivity Lab</p>
+            <p class="muted">MLP ensemble for wireless quality prediction on Facebook app; −23–27% MSE.</p>
+          </article>
+          <article class="panel">
+            <p class="exp-org">Microsoft Research Asia · CMU</p>
+            <h3>Research Intern · Visiting Scholar</h3>
+            <p class="muted-sm">2016 – 2017</p>
+            <p class="muted">Indoor navigation (Path-Guide) at MSRA; HCII visit at Carnegie Mellon.</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- Skills -->
-    <section class="section" id="skills">
+    <!-- Research themes -->
+    <section class="section" id="research">
       <div class="container">
         <div class="section-head">
-          <p class="eyebrow">Skills</p>
-          <h2>Toolchain</h2>
+          <h2 class="section-title">Research Themes</h2>
+          <a class="inline-link" href="https://scholar.google.com/citations?user=y3kfeMYAAAAJ&hl=en" target="_blank" rel="noopener">See All Publications</a>
         </div>
-        <div class="skills-grid">
-          <div class="skill-group">
-            <h3>LLM Systems</h3>
-            <div class="tags">
-              <span>xLLM</span><span>vLLM</span><span>SGLang</span><span>verl</span>
-              <span>Orca</span><span>Megatron-LM</span><span>FSDP</span>
-            </div>
-          </div>
-          <div class="skill-group">
-            <h3>Machine Learning</h3>
-            <div class="tags">
-              <span>PyTorch</span><span>Transformers</span><span>PPO / GRPO</span>
-              <span>Reward Models</span><span>Llama</span><span>Qwen</span><span>DeepSeek</span>
-            </div>
-          </div>
-          <div class="skill-group">
-            <h3>Systems &amp; Video</h3>
-            <div class="tags">
-              <span>C/C++</span><span>Python</span><span>Go</span><span>Linux</span>
-              <span>H.264/5/6</span><span>ffmpeg</span><span>QUIC / TCP</span>
-            </div>
-          </div>
-          <div class="skill-group">
-            <h3>Production</h3>
-            <div class="tags">
-              <span>A/B Experiments</span><span>Grafana</span><span>CI/CD</span>
-              <span>GPU Clusters</span><span>Benchmarking</span>
-            </div>
-          </div>
+        <div class="grid grid-3">
+          <article class="theme">
+            <h3>LLM Systems &amp; Agents</h3>
+            <p>High-performance inference and RL for computer-use and multimodal agents.</p>
+            <ul class="system-list">
+              <li><span class="sys-name">Computer-use agents</span> <span>[xAI · SGLang]</span></li>
+              <li><span class="sys-name">Imagine RL &amp; reward models</span> <span>[xAI]</span></li>
+              <li><span class="sys-name">xLLM / VLM serving</span> <span>[ByteDance]</span></li>
+              <li><span class="sys-name">verl post-training</span> <span>[PPO · GRPO]</span></li>
+            </ul>
+          </article>
+          <article class="theme">
+            <h3>Video Systems</h3>
+            <p>Large-scale adaptive streaming and production video processing.</p>
+            <ul class="system-list">
+              <li><a href="https://dl.acm.org/doi/10.1145/3718958.3750500" target="_blank" rel="noopener">TLadder</a> <span>[SIGCOMM’25]</span></li>
+              <li><a href="https://www.usenix.org/system/files/nsdi23-li-zhuqi.pdf" target="_blank" rel="noopener">Dashlet</a> <span>[NSDI’23]</span></li>
+              <li><span class="sys-name">Project CAE</span> <span>[TikTok]</span></li>
+              <li><span class="sys-name">ROI-driven transcoding</span> <span>[TikTok]</span></li>
+            </ul>
+          </article>
+          <article class="theme">
+            <h3>Wireless &amp; Networking</h3>
+            <p>Cross-layer optimization for sensing, delivery, and programmable radio environments.</p>
+            <ul class="system-list">
+              <li><a href="https://www.usenix.org/system/files/nsdi19-li-zhuqi.pdf" target="_blank" rel="noopener">LAIA / PRESS</a> <span>[NSDI’19]</span></li>
+              <li><a href="https://dl.acm.org/doi/10.1145/3446382.3448650" target="_blank" rel="noopener">REITS</a> <span>[HotMobile’21]</span></li>
+              <li><span class="sys-name">Spider</span> <span>[SEC’21]</span></li>
+              <li><a href="https://ieeexplore.ieee.org/abstract/document/8737442" target="_blank" rel="noopener">Path-Guide</a> <span>[INFOCOM’19]</span></li>
+            </ul>
+          </article>
         </div>
       </div>
     </section>
 
     <!-- Publications -->
-    <section class="section section-alt" id="publications">
+    <section class="section" id="publications">
       <div class="container">
         <div class="section-head">
-          <p class="eyebrow">Publications</p>
-          <h2>Selected papers</h2>
-          <p class="section-desc">
-            <a href="https://scholar.google.com/citations?user=y3kfeMYAAAAJ&hl=en" target="_blank" rel="noopener">
-              Google Scholar profile →
-            </a>
-            · 339 citations · h-index 8
-          </p>
+          <h2 class="section-title">Selected Publications</h2>
+          <a class="inline-link" href="https://scholar.google.com/citations?user=y3kfeMYAAAAJ&hl=en" target="_blank" rel="noopener">See All Publications</a>
         </div>
-
-        <ol class="pub-list">
-          <li class="pub">
-            <div class="pub-venue">SIGCOMM 2025</div>
-            <h3>
-              <a href="https://dl.acm.org/doi/10.1145/3718958.3750500" target="_blank" rel="noopener">
-                TLadder: QoE-Centric Video Ladder Optimization with Playback Feedback at Billion Scale
-              </a>
-            </h3>
-            <p class="pub-authors">
-              <strong>Zhuqi Li</strong>, He Liu, Shenglan Huang, Baojin Geng, Jack Chen, Jialin Chen,
-              Liyang Sun, Qianyun Ma, Peizhe Liu, Junjun Zhao, Yiting Liao, Jamie Chen, Qian Ma,
-              Qiang Ma, Feng Qian
-            </p>
-          </li>
-          <li class="pub">
-            <div class="pub-venue">NSDI 2023</div>
-            <h3>
-              <a href="https://www.usenix.org/system/files/nsdi23-li-zhuqi.pdf" target="_blank" rel="noopener">
-                Dashlet: Taming Swipe Uncertainty for Robust Short Video Streaming
-              </a>
-            </h3>
-            <p class="pub-authors">
-              <strong>Zhuqi Li</strong>, Yaxiong Xie, Ravi Netravali, Kyle Jamieson
-            </p>
-          </li>
-          <li class="pub">
-            <div class="pub-venue">NSDI 2019 · SIGMOBILE Research Highlights</div>
-            <h3>
-              <a href="https://www.usenix.org/system/files/nsdi19-li-zhuqi.pdf" target="_blank" rel="noopener">
-                Towards Programming the Radio Environment with Large Arrays of Inexpensive Antennas
-              </a>
-            </h3>
-            <p class="pub-authors">
-              <strong>Zhuqi Li</strong>, Yaxiong Xie, Longfei Shangguan, Rotman Ivan Zelaya,
-              Jeremy Gummeson, Wenjun Hu, Kyle Jamieson
-            </p>
-          </li>
-          <li class="pub">
-            <div class="pub-venue">SEC 2021 · US Patent 11272423</div>
-            <h3>
-              Spider: A Multi-Hop Millimeter-Wave Network for Live Video Analytics
-            </h3>
-            <p class="pub-authors">
-              <strong>Zhuqi Li</strong>, Yuanchao Shu, Ganesh Ananthanarayanan, Longfei Shangguan,
-              Kyle Jamieson, Victor Bahl
-            </p>
-          </li>
-          <li class="pub">
-            <div class="pub-venue">HotMobile 2021 · BBC / New Scientist</div>
-            <h3>
-              <a href="https://dl.acm.org/doi/10.1145/3446382.3448650" target="_blank" rel="noopener">
-                REITS: Reflective Surface for Intelligent Transportation Systems
-              </a>
-            </h3>
-            <p class="pub-authors">
-              <strong>Zhuqi Li</strong>, Can Wu, Sigurd Wagner, James C. Sturm, Naveen Verma, Kyle Jamieson
-            </p>
-          </li>
-          <li class="pub">
-            <div class="pub-venue">INFOCOM 2019</div>
-            <h3>
-              <a href="https://ieeexplore.ieee.org/abstract/document/8737442" target="_blank" rel="noopener">
-                Incrementally-deployable Indoor Navigation with Automatic Trace Generation
-              </a>
-            </h3>
-            <p class="pub-authors">
-              Yuanchao Shu*, <strong>Zhuqi Li*</strong>, Börje F. Karlsson, Yiyong Lin,
-              Thomas Moscibroda, Kang G. Shin (* co-primary)
-            </p>
-          </li>
-        </ol>
+        <p class="muted">Selected conference papers and thesis.</p>
+        <div class="pub-list">
+          <article class="pub-item">
+            <div class="pub-body">
+              <p><span class="tag">SIGCOMM ’25</span> TLadder: QoE-Centric Video Ladder Optimization with Playback Feedback at Billion Scale.</p>
+              <p class="authors"><strong>Authors:</strong> <strong>Zhuqi Li</strong>, He Liu, Shenglan Huang, Baojin Geng, Jack Chen, Jialin Chen, Liyang Sun, Qianyun Ma, Peizhe Liu, Junjun Zhao, Yiting Liao, Jamie Chen, Qian Ma, Qiang Ma, Feng Qian.</p>
+              <div class="pub-links">
+                <a href="https://dl.acm.org/doi/10.1145/3718958.3750500" target="_blank" rel="noopener">Paper</a>
+              </div>
+            </div>
+          </article>
+          <article class="pub-item">
+            <div class="pub-body">
+              <p><span class="tag">NSDI ’23</span> Dashlet: Taming Swipe Uncertainty for Robust Short Video Streaming.</p>
+              <p class="authors"><strong>Authors:</strong> <strong>Zhuqi Li</strong>, Yaxiong Xie, Ravi Netravali, Kyle Jamieson.</p>
+              <div class="pub-links">
+                <a href="https://www.usenix.org/system/files/nsdi23-li-zhuqi.pdf" target="_blank" rel="noopener">Paper</a>
+              </div>
+            </div>
+          </article>
+          <article class="pub-item">
+            <div class="pub-body">
+              <p><span class="tag">NSDI ’19</span> Towards Programming the Radio Environment with Large Arrays of Inexpensive Antennas.</p>
+              <p class="authors"><strong>Authors:</strong> <strong>Zhuqi Li</strong>, Yaxiong Xie, Longfei Shangguan, Rotman Ivan Zelaya, Jeremy Gummeson, Wenjun Hu, Kyle Jamieson.</p>
+              <div class="pub-links">
+                <a href="https://www.usenix.org/system/files/nsdi19-li-zhuqi.pdf" target="_blank" rel="noopener">Paper</a>
+                <span class="award-badge">SIGMOBILE Research Highlights</span>
+              </div>
+            </div>
+          </article>
+          <article class="pub-item">
+            <div class="pub-body">
+              <p><span class="tag">SEC ’21</span> Spider: A Multi-Hop Millimeter-Wave Network for Live Video Analytics.</p>
+              <p class="authors"><strong>Authors:</strong> <strong>Zhuqi Li</strong>, Yuanchao Shu, Ganesh Ananthanarayanan, Longfei Shangguan, Kyle Jamieson, Victor Bahl.</p>
+              <div class="pub-links">
+                <a href="https://www.youtube.com/watch?v=CBr3bLT3-E4" target="_blank" rel="noopener">Video</a>
+                <span class="award-badge">US Patent 11272423</span>
+              </div>
+            </div>
+          </article>
+          <article class="pub-item">
+            <div class="pub-body">
+              <p><span class="tag">HotMobile ’21</span> REITS: Reflective Surface for Intelligent Transportation Systems.</p>
+              <p class="authors"><strong>Authors:</strong> <strong>Zhuqi Li</strong>, Can Wu, Sigurd Wagner, James C. Sturm, Naveen Verma, Kyle Jamieson.</p>
+              <div class="pub-links">
+                <a href="https://dl.acm.org/doi/10.1145/3446382.3448650" target="_blank" rel="noopener">Paper</a>
+                <a href="https://www.bbc.co.uk/newsround/56322871" target="_blank" rel="noopener">BBC</a>
+              </div>
+            </div>
+          </article>
+          <article class="pub-item">
+            <div class="pub-body">
+              <p><span class="tag">INFOCOM ’19</span> Incrementally-deployable Indoor Navigation with Automatic Trace Generation.</p>
+              <p class="authors"><strong>Authors:</strong> Yuanchao Shu*, <strong>Zhuqi Li*</strong>, Börje F. Karlsson, Yiyong Lin, Thomas Moscibroda, Kang G. Shin (* co-primary).</p>
+              <div class="pub-links">
+                <a href="https://ieeexplore.ieee.org/abstract/document/8737442" target="_blank" rel="noopener">Paper</a>
+              </div>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 
     <!-- Education -->
     <section class="section" id="education">
       <div class="container">
-        <div class="section-head">
-          <p class="eyebrow">Education</p>
-          <h2>Academic background</h2>
-        </div>
-        <div class="edu-grid">
-          <article class="edu-card">
-            <div class="edu-badge">Ph.D.</div>
-            <h3>Computer Science</h3>
-            <p class="edu-school">Princeton University</p>
-            <p class="edu-meta">08/2017 – 03/2023 · Advised by Kyle Jamieson</p>
-            <p class="edu-thesis">
-              Thesis: <em>Cross-Layer Optimization for Video Delivery on Wireless Networks</em>
-            </p>
+        <h2 class="section-title">Education</h2>
+        <div class="grid grid-2">
+          <article class="panel">
+            <h3>Ph.D. in Computer Science</h3>
+            <p class="muted-sm">Princeton University · 08/2017 – 03/2023</p>
+            <p class="muted">Advised by Kyle Jamieson. Thesis: <em>Cross-Layer Optimization for Video Delivery on Wireless Networks</em>.</p>
           </article>
-          <article class="edu-card">
-            <div class="edu-badge">B.S.</div>
-            <h3>Computer Science</h3>
-            <p class="edu-school">Peking University</p>
-            <p class="edu-meta">09/2013 – 07/2017 · Summa Cum Laude</p>
-            <p class="edu-thesis">
-              Top Ten Undergraduate Dissertation Award, School of EECS
-            </p>
+          <article class="panel">
+            <h3>B.S. in Computer Science</h3>
+            <p class="muted-sm">Peking University · 09/2013 – 07/2017 · Summa Cum Laude</p>
+            <p class="muted">Top Ten Undergraduate Dissertation Award, School of EECS.</p>
           </article>
         </div>
-
-        <div class="teaching">
+        <div class="panel teaching-panel">
           <h3>Teaching</h3>
-          <ul>
+          <ul class="bullet-list">
             <li><strong>Advanced Programming Techniques</strong> (COS 333), Princeton — TA, Spring 2020</li>
             <li><strong>Advanced Computer Networks</strong> (COS 561), Princeton — TA, Fall 2018</li>
             <li><strong>Introduction to Computer Systems</strong>, Peking University — TA, Fall 2015</li>
@@ -476,46 +320,74 @@
     </section>
 
     <!-- Awards -->
-    <section class="section section-alt" id="awards">
+    <section class="section" id="awards">
       <div class="container">
-        <div class="section-head">
-          <p class="eyebrow">Recognition</p>
-          <h2>Awards &amp; honors</h2>
+        <h2 class="section-title">Awards &amp; Honors</h2>
+        <div class="grid grid-3">
+          <article class="card"><p>SIGMOBILE Research Highlights, 2019</p></article>
+          <article class="card"><p>Princeton Graduate Student Fellowship, 2017</p></article>
+          <article class="card"><p>ICCSE Best Paper Award, 2017</p></article>
+          <article class="card"><p>Top Ten Undergraduate Dissertation Award, PKU EECS, 2017</p></article>
+          <article class="card"><p>Award of Excellence, Microsoft Research, 2016 &amp; 2017</p></article>
+          <article class="card"><p>Founder Scholarship, Peking University, 2016</p></article>
         </div>
-        <ul class="awards-list">
-          <li><span class="award-year">2019</span> SIGMOBILE Research Highlights</li>
-          <li><span class="award-year">2017</span> Princeton Graduate Student Fellowship</li>
-          <li><span class="award-year">2017</span> ICCSE Best Paper Award</li>
-          <li><span class="award-year">2017</span> Top Ten Undergraduate Dissertation Award, Peking University EECS</li>
-          <li><span class="award-year">2016–17</span> Award of Excellence, Microsoft Research (×2)</li>
-          <li><span class="award-year">2016</span> Founder Scholarship, Peking University</li>
-          <li><span class="award-year">2015–16</span> Innovation Award &amp; Pacemaker to Merit Student, PKU</li>
-        </ul>
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section class="section" id="skills">
+      <div class="container">
+        <h2 class="section-title">Skills</h2>
+        <div class="grid grid-2">
+          <article class="theme">
+            <h3>LLM Systems</h3>
+            <p class="muted">xLLM, vLLM, SGLang, verl, Orca, Megatron-LM, FSDP</p>
+          </article>
+          <article class="theme">
+            <h3>Machine Learning</h3>
+            <p class="muted">PyTorch, Transformers, PPO / GRPO, Reward Models, Llama, Qwen, DeepSeek</p>
+          </article>
+          <article class="theme">
+            <h3>Systems &amp; Video</h3>
+            <p class="muted">C/C++, Python, Go, Linux, H.264/5/6, ffmpeg, QUIC / TCP</p>
+          </article>
+          <article class="theme">
+            <h3>Production</h3>
+            <p class="muted">A/B experiments, Grafana, CI/CD, GPU clusters, benchmarking</p>
+          </article>
+        </div>
       </div>
     </section>
 
     <!-- Contact -->
-    <section class="section contact" id="contact">
-      <div class="container contact-inner">
-        <p class="eyebrow">Contact</p>
-        <h2>Let’s build the next generation of agents</h2>
-        <p>
-          Open to research collaborations, systems discussions, and conversations about
-          LLM inference and agentic AI.
-        </p>
-        <div class="contact-actions">
-          <a class="btn btn-primary" href="mailto:zhuqi.jeffery.li@gmail.com">zhuqi.jeffery.li@gmail.com</a>
-          <a class="btn btn-ghost" href="https://www.linkedin.com/in/zhuqi-li-48a8a9bb/" target="_blank" rel="noopener">LinkedIn</a>
-          <a class="btn btn-ghost" href="assets/CV-Zhuqi-Li.pdf" target="_blank" rel="noopener">CV (PDF)</a>
+    <section class="section" id="contact">
+      <div class="container">
+        <h2 class="section-title">Contact</h2>
+        <div class="grid grid-2">
+          <article class="panel">
+            <h3>Email</h3>
+            <p><a href="mailto:zhuqi.jeffery.li@gmail.com">zhuqi.jeffery.li@gmail.com</a></p>
+          </article>
+          <article class="panel">
+            <h3>Links</h3>
+            <p>
+              <a href="https://www.linkedin.com/in/zhuqi-li-48a8a9bb/" target="_blank" rel="noopener">LinkedIn</a>
+              ·
+              <a href="https://scholar.google.com/citations?user=y3kfeMYAAAAJ&hl=en" target="_blank" rel="noopener">Google Scholar</a>
+              ·
+              <a href="https://github.com/JeffryLee" target="_blank" rel="noopener">GitHub</a>
+              ·
+              <a href="assets/CV-Zhuqi-Li.pdf" target="_blank" rel="noopener">CV (PDF)</a>
+            </p>
+          </article>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="site-footer">
-    <div class="container footer-inner">
-      <p>© <span id="year"></span> Zhuqi Li. Built with care.</p>
-      <a href="#top">Back to top ↑</a>
+  <footer class="footer">
+    <div class="container">
+      <p>© <span id="year"></span> Zhuqi Li.</p>
     </div>
   </footer>
 
