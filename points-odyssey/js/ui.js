@@ -335,6 +335,8 @@ function renderMap(snap) {
   const w = 1000;
   const h = 620;
   const cur = snap.players[snap.currentPlayerIndex];
+  const pawnColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
+  const iconR = 16;
 
   // Routes
   let routesHtml = '';
@@ -346,7 +348,7 @@ function renderMap(snap) {
     const x2 = (cb.x / 100) * w;
     const y2 = (cb.y / 100) * h;
     const primary = r.airlines[0];
-    const color = AIRLINES[primary]?.color || '#888';
+    const color = AIRLINES[primary] ? AIRLINES[primary].color : '#888';
     const key = [r.a, r.b].sort().join('-');
     const owned = cur.network.includes(key);
     routesHtml += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
@@ -355,45 +357,70 @@ function renderMap(snap) {
       stroke-dasharray="${owned ? 'none' : '6 4'}" />`;
   }
 
-  // Cities
+  // Cities (dots + labels only — players drawn as head icons above)
   let citiesHtml = '';
   for (const c of Object.values(CITIES)) {
     const x = (c.x / 100) * w;
     const y = (c.y / 100) * h;
-    const here = snap.players.filter((p) => p.city === c.id);
     const isCur = cur.city === c.id;
     citiesHtml += `
       <g class="city-node" data-city="${c.id}" style="cursor:pointer">
-        <circle cx="${x}" cy="${y}" r="${isCur ? 14 : 10}"
+        <circle cx="${x}" cy="${y}" r="${isCur ? 11 : 8}"
           fill="${isCur ? '#d4a017' : '#1a2744'}"
           stroke="#f0e6d3" stroke-width="2" />
-        <text x="${x}" y="${y - 18}" text-anchor="middle" fill="#f0e6d3"
+        <text x="${x}" y="${y - 16}" text-anchor="middle" fill="#f0e6d3"
           font-size="11" font-weight="600">${c.id}</text>
-        ${here
-          .map(
-            (p, i) =>
-              `<circle cx="${x + 12 + i * 8}" cy="${y + 12}" r="5" fill="${BANKS.chase.color}" stroke="#fff" stroke-width="1">
-                <title>${p.name}</title>
-              </circle>`
-          )
-          .join('')}
       </g>
     `;
   }
 
-  // Player pawns with colors
-  const pawnColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
-  let pawns = '';
+  // Group players by city for stacking offsets
+  const byCity = {};
   snap.players.forEach((p, i) => {
-    const c = CITIES[p.city];
-    const x = (c.x / 100) * w + (i % 3) * 6 - 6;
-    const y = (c.y / 100) * h + Math.floor(i / 3) * 6;
-    pawns += `<circle cx="${x}" cy="${y}" r="6" fill="${pawnColors[i]}" stroke="#fff" stroke-width="1.5">
-      <title>${p.name}</title></circle>`;
+    if (!byCity[p.city]) byCity[p.city] = [];
+    byCity[p.city].push({ p, i });
+  });
+
+  let defs = '';
+  let pawns = '';
+  Object.entries(byCity).forEach(([cityId, list]) => {
+    const c = CITIES[cityId];
+    const baseX = (c.x / 100) * w;
+    const baseY = (c.y / 100) * h;
+    list.forEach(({ p, i }, slot) => {
+      // Fan icons around the city dot
+      const n = list.length;
+      const angle = n === 1 ? -Math.PI / 2 : (slot / n) * Math.PI * 2 - Math.PI / 2;
+      const ring = n === 1 ? 0 : 22;
+      const x = baseX + Math.cos(angle) * ring;
+      const y = baseY + Math.sin(angle) * ring + (n === 1 ? -28 : 0);
+      const clipId = `pawn-clip-${i}`;
+      const border = pawnColors[i % pawnColors.length];
+      const isActive = i === snap.currentPlayerIndex;
+      const img = (p.character && p.character.image) || 'assets/logo.jpg';
+      const r = isActive ? iconR + 2 : iconR;
+      defs += `<clipPath id="${clipId}"><circle cx="${x}" cy="${y}" r="${r}" /></clipPath>`;
+      pawns += `
+        <g class="player-pawn" data-player="${p.id}" style="pointer-events:none">
+          ${
+            isActive
+              ? `<circle cx="${x}" cy="${y}" r="${r + 4}" fill="none" stroke="${border}" stroke-width="2" opacity="0.9">
+                   <animate attributeName="r" values="${r + 3};${r + 6};${r + 3}" dur="1.6s" repeatCount="indefinite" />
+                 </circle>`
+              : ''
+          }
+          <circle cx="${x}" cy="${y}" r="${r + 1.5}" fill="#0a1224" stroke="${border}" stroke-width="${isActive ? 3 : 2}" />
+          <image href="${img}" x="${x - r}" y="${y - r}" width="${r * 2}" height="${r * 2}"
+            clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid slice" />
+          <title>${p.name}${p.isBot ? ' (Bot)' : ''} — ${p.character ? p.character.name : ''}</title>
+        </g>
+      `;
+    });
   });
 
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   svg.innerHTML = `
+    <defs>${defs}</defs>
     <image href="assets/map-bg.jpg" x="0" y="0" width="${w}" height="${h}" opacity="0.35" preserveAspectRatio="xMidYMid slice" />
     <rect x="0" y="0" width="${w}" height="${h}" fill="rgba(10,18,36,0.55)" />
     ${routesHtml}

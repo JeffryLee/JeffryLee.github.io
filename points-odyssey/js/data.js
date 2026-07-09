@@ -380,6 +380,10 @@ export const CREDIT_CARDS = [
  * hotels[] = signature properties: one stay (1 night) per property per player per game.
  * brand still drives which hotel points currency pays for the stay.
  */
+/**
+ * Signature hotels — verified operating properties (or active Honors/Bonvoy/World of Hyatt flags).
+ * Park Hyatt Los Angeles is NOT open (Oceanwide Plaza stalled); Waldorf Astoria NYC is closed for reno.
+ */
 export const CITIES = {
   SEA: {
     id: 'SEA', name: 'Seattle', x: 12, y: 12, region: 'nw',
@@ -393,6 +397,7 @@ export const CITIES = {
     id: 'SFO', name: 'San Francisco', x: 8, y: 42, region: 'west',
     hotels: [
       { id: 'sfo-marriott', name: 'San Francisco Marriott Marquis', brand: 'marriott', cost: 35000, vp: 4 },
+      { id: 'sfo-hilton', name: 'Hilton San Francisco Union Square', brand: 'hilton', cost: 38000, vp: 3 },
       { id: 'sfo-hyatt', name: 'Hyatt Regency San Francisco', brand: 'hyatt', cost: 18000, vp: 5 },
     ],
   },
@@ -401,7 +406,8 @@ export const CITIES = {
     hotels: [
       { id: 'lax-marriott', name: 'JW Marriott Los Angeles L.A. LIVE', brand: 'marriott', cost: 30000, vp: 3 },
       { id: 'lax-hilton', name: 'Hilton Los Angeles Airport', brand: 'hilton', cost: 40000, vp: 3 },
-      { id: 'lax-hyatt', name: 'Park Hyatt Los Angeles', brand: 'hyatt', cost: 15000, vp: 4 },
+      // No operating Park Hyatt in LA — use Andaz West Hollywood (World of Hyatt)
+      { id: 'lax-hyatt', name: 'Andaz West Hollywood', brand: 'hyatt', cost: 15000, vp: 4 },
     ],
   },
   LAS: {
@@ -415,7 +421,7 @@ export const CITIES = {
   PHX: {
     id: 'PHX', name: 'Phoenix', x: 22, y: 58, region: 'sw',
     hotels: [
-      { id: 'phx-marriott', name: 'The Phoenician, a Luxury Collection Resort', brand: 'marriott', cost: 28000, vp: 4 },
+      { id: 'phx-marriott', name: 'The Phoenician, a Luxury Collection Resort, Scottsdale', brand: 'marriott', cost: 28000, vp: 4 },
       { id: 'phx-hilton', name: 'Arizona Biltmore, a Waldorf Astoria Resort', brand: 'hilton', cost: 32000, vp: 4 },
     ],
   },
@@ -430,7 +436,7 @@ export const CITIES = {
   DFW: {
     id: 'DFW', name: 'Dallas', x: 48, y: 58, region: 'south',
     hotels: [
-      { id: 'dfw-marriott', name: 'The Joule, Dallas (Marriott Autograph)', brand: 'marriott', cost: 22000, vp: 3 },
+      { id: 'dfw-marriott', name: 'The Joule, Dallas, Autograph Collection', brand: 'marriott', cost: 22000, vp: 3 },
       { id: 'dfw-hilton', name: 'Hilton Anatole', brand: 'hilton', cost: 30000, vp: 2 },
       { id: 'dfw-hyatt', name: 'Hyatt Regency Dallas', brand: 'hyatt', cost: 12000, vp: 3 },
     ],
@@ -453,7 +459,7 @@ export const CITIES = {
     id: 'ORD', name: 'Chicago', x: 58, y: 32, region: 'mw',
     hotels: [
       { id: 'ord-marriott', name: 'Chicago Marriott Downtown Magnificent Mile', brand: 'marriott', cost: 28000, vp: 3 },
-      { id: 'ord-hilton', name: 'The Hilton Chicago', brand: 'hilton', cost: 38000, vp: 3 },
+      { id: 'ord-hilton', name: 'Hilton Chicago', brand: 'hilton', cost: 38000, vp: 3 },
       { id: 'ord-hyatt', name: 'Park Hyatt Chicago', brand: 'hyatt', cost: 15000, vp: 4 },
     ],
   },
@@ -462,6 +468,7 @@ export const CITIES = {
     hotels: [
       { id: 'atl-marriott', name: 'Atlanta Marriott Marquis', brand: 'marriott', cost: 22000, vp: 3 },
       { id: 'atl-hilton', name: 'Hilton Atlanta', brand: 'hilton', cost: 32000, vp: 2 },
+      { id: 'atl-hyatt', name: 'Grand Hyatt Atlanta in Buckhead', brand: 'hyatt', cost: 14000, vp: 4 },
     ],
   },
   MSY: {
@@ -475,7 +482,7 @@ export const CITIES = {
     id: 'MIA', name: 'Miami', x: 78, y: 82, region: 'se',
     hotels: [
       { id: 'mia-marriott', name: 'JW Marriott Miami Turnberry Resort & Spa', brand: 'marriott', cost: 35000, vp: 5 },
-      { id: 'mia-hilton', name: 'Fontainebleau Miami Beach (Hilton Honors)', brand: 'hilton', cost: 45000, vp: 5 },
+      { id: 'mia-hilton', name: 'Fontainebleau Miami Beach', brand: 'hilton', cost: 45000, vp: 5 },
       { id: 'mia-hyatt', name: 'Hyatt Regency Miami', brand: 'hyatt', cost: 18000, vp: 5 },
     ],
   },
@@ -491,7 +498,8 @@ export const CITIES = {
     id: 'NYC', name: 'New York', x: 86, y: 32, region: 'ne',
     hotels: [
       { id: 'nyc-marriott', name: 'The Ritz-Carlton New York, Central Park', brand: 'marriott', cost: 45000, vp: 6 },
-      { id: 'nyc-hilton', name: 'Waldorf Astoria New York', brand: 'hilton', cost: 55000, vp: 5 },
+      // Waldorf Astoria New York closed for multi-year renovation — use operating Hilton flag
+      { id: 'nyc-hilton', name: 'New York Hilton Midtown', brand: 'hilton', cost: 45000, vp: 4 },
       { id: 'nyc-hyatt', name: 'Park Hyatt New York', brand: 'hyatt', cost: 25000, vp: 6 },
     ],
   },
@@ -500,6 +508,7 @@ export const CITIES = {
     hotels: [
       { id: 'bos-marriott', name: 'Boston Marriott Copley Place', brand: 'marriott', cost: 30000, vp: 3 },
       { id: 'bos-hilton', name: 'Hilton Boston Park Plaza', brand: 'hilton', cost: 40000, vp: 3 },
+      { id: 'bos-hyatt', name: 'Hyatt Regency Boston', brand: 'hyatt', cost: 16000, vp: 4 },
     ],
   },
 };
