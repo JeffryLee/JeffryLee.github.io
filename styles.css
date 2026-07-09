@@ -251,10 +251,16 @@ a:hover, a:focus { color: var(--link-hover); }
 
 .portrait {
   width: 100%;
-  border-radius: 12px;
+  border-radius: 0;
   aspect-ratio: 1;
   object-fit: cover;
+  object-position: center top;
   display: block;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  vertical-align: top;
 }
 
 /* ===== Sections ===== */
