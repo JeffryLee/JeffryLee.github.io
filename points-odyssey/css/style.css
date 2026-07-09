@@ -1190,3 +1190,19 @@ button {
 .legend .aa::before {
   background: #0078d2;
 }
+
+/* Flight animation plane + trail */
+.flight-plane {
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
+}
+
+.flight-plane image {
+  /* subtle lift */
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.flight-trail {
+  pointer-events: none;
+}

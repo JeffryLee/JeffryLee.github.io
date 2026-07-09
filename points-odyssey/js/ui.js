@@ -21,6 +21,9 @@ let setupSelections = [];
 /** Prevent overlapping bot auto-play */
 let botRunning = false;
 const BOT_STEP_MS = 700;
+/** During flight anim, keep pawn at origin until plane lands */
+let mapCityOverride = null; // { playerId, city }
+let flightAnimPlaying = false;
 
 const $ = (sel, el = document) => el.querySelector(sel);
 const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
@@ -237,8 +240,8 @@ function renderAll() {
   renderLog(snap);
   renderPhasePanel(cur, snap);
 
-  // Auto-play bots
-  if (cur.isBot && !botRunning) {
+  // Auto-play bots (not during flight animation)
+  if (cur.isBot && !botRunning && !flightAnimPlaying) {
     scheduleBotTurn();
   }
 }
@@ -267,8 +270,114 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function cityXY(cityId, w = 1000, h = 620) {
+  const c = CITIES[cityId];
+  return { x: (c.x / 100) * w, y: (c.y / 100) * h };
+}
+
+/**
+ * Animate plane along legs (from→to). Supports multi-leg one-stop.
+ */
+function animateFlightLeg(fromId, toId, airline, durationMs = 1100) {
+  return new Promise((resolve) => {
+    const svg = $('#map-svg');
+    if (!svg) {
+      resolve();
+      return;
+    }
+    const w = 1000;
+    const h = 620;
+    const a = cityXY(fromId, w, h);
+    const b = cityXY(toId, w, h);
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    const color =
+      (AIRLINES[airline] && AIRLINES[airline].color) || '#f0e6d3';
+
+    // Trail path
+    const trail = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2 - Math.min(40, Math.hypot(dx, dy) * 0.12);
+    const d = `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`;
+    trail.setAttribute('d', d);
+    trail.setAttribute('fill', 'none');
+    trail.setAttribute('stroke', color);
+    trail.setAttribute('stroke-width', '2');
+    trail.setAttribute('stroke-dasharray', '6 4');
+    trail.setAttribute('opacity', '0.85');
+    trail.setAttribute('class', 'flight-trail');
+    svg.appendChild(trail);
+
+    // Plane group
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'flight-plane');
+    const planeSize = 36;
+    const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+    img.setAttribute('href', 'assets/plane.png');
+    img.setAttribute('width', String(planeSize));
+    img.setAttribute('height', String(planeSize));
+    img.setAttribute('x', String(-planeSize / 2));
+    img.setAttribute('y', String(-planeSize / 2));
+    // Plane art faces up; rotate so nose follows path
+    img.setAttribute('transform', 'rotate(90)');
+    g.appendChild(img);
+    svg.appendChild(g);
+
+    const start = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - start) / durationMs);
+      // ease-in-out
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      // Quadratic Bezier point
+      const omt = 1 - e;
+      const x = omt * omt * a.x + 2 * omt * e * mx + e * e * b.x;
+      const y = omt * omt * a.y + 2 * omt * e * my + e * e * b.y;
+      // Tangent for rotation
+      const tx = 2 * omt * (mx - a.x) + 2 * e * (b.x - mx);
+      const ty = 2 * omt * (my - a.y) + 2 * e * (b.y - my);
+      const rot = (Math.atan2(ty, tx) * 180) / Math.PI;
+      g.setAttribute('transform', `translate(${x}, ${y}) rotate(${rot})`);
+      trail.setAttribute('opacity', String(0.3 + 0.55 * (1 - t)));
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        g.remove();
+        trail.remove();
+        resolve();
+      }
+    }
+    // Initial position
+    g.setAttribute('transform', `translate(${a.x}, ${a.y}) rotate(${angle})`);
+    requestAnimationFrame(frame);
+  });
+}
+
+async function playPendingFlightAnims() {
+  const anims = game.consumeFlightAnims();
+  if (!anims.length) return;
+  flightAnimPlaying = true;
+  for (const anim of anims) {
+    mapCityOverride = { playerId: anim.playerId, city: anim.from };
+    // Keep pawn at departure during this leg
+    if (game.phase === 'playing') {
+      const snap = game.snapshot();
+      renderMap(snap);
+      renderPlayersBar(snap);
+    }
+    await animateFlightLeg(anim.from, anim.to, anim.airline, 1000);
+    // After leg, override to destination for multi-leg
+    mapCityOverride = { playerId: anim.playerId, city: anim.to };
+  }
+  mapCityOverride = null;
+  flightAnimPlaying = false;
+  if (game.phase === 'playing') {
+    renderMap(game.snapshot());
+  }
+}
+
 async function scheduleBotTurn() {
-  if (botRunning) return;
+  if (botRunning || flightAnimPlaying) return;
   if (game.phase !== 'playing') return;
   const p = game.currentPlayer;
   if (!p || !p.isBot) return;
@@ -283,14 +392,13 @@ async function scheduleBotTurn() {
     }
 
     const { logs } = playBotActions(game);
-    for (const line of logs.slice(0, 4)) {
-      // brief feedback; full detail in game log
-    }
     if (logs.length) {
       toast(`🤖 ${logs[logs.length - 1]}`);
     }
+    // Animate any flights before full refresh
+    await playPendingFlightAnims();
     renderAll();
-    await sleep(BOT_STEP_MS);
+    await sleep(400);
 
     if (game.phase !== 'playing') {
       botRunning = false;
@@ -312,6 +420,8 @@ async function scheduleBotTurn() {
     }
   } catch (e) {
     botRunning = false;
+    flightAnimPlaying = false;
+    mapCityOverride = null;
     console.error(e);
     toast(`Bot error: ${e.message}`, true);
     // Try to unstick: end turn if possible
@@ -374,11 +484,15 @@ function renderMap(snap) {
     `;
   }
 
-  // Group players by city for stacking offsets
+  // Group players by city for stacking offsets (honor flight anim override)
   const byCity = {};
   snap.players.forEach((p, i) => {
-    if (!byCity[p.city]) byCity[p.city] = [];
-    byCity[p.city].push({ p, i });
+    let cityId = p.city;
+    if (mapCityOverride && mapCityOverride.playerId === p.id) {
+      cityId = mapCityOverride.city;
+    }
+    if (!byCity[cityId]) byCity[cityId] = [];
+    byCity[cityId].push({ p, i });
   });
 
   let defs = '';
@@ -737,10 +851,26 @@ function openModal(title, bodyHtml, onConfirm) {
   overlay.classList.add('open');
 
   const confirm = $('#modal-confirm');
-  confirm.onclick = () => {
+  confirm.onclick = async () => {
     try {
-      onConfirm();
+      await Promise.resolve(onConfirm());
       closeModal();
+      // If flights were booked, animate before full UI refresh
+      if (game.flightAnims && game.flightAnims.length) {
+        // Light refresh of side panel without teleporting pawn yet
+        const snap = game.snapshot();
+        const cur = snap.players[snap.currentPlayerIndex];
+        // Hold flyer at first leg origin
+        const first = game.flightAnims[0];
+        mapCityOverride = { playerId: first.playerId, city: first.from };
+        renderPlayersBar(snap);
+        renderMap(snap);
+        renderHand(cur, snap);
+        renderLog(snap);
+        renderPhasePanel(cur, snap);
+        await playPendingFlightAnims();
+        mapCityOverride = null;
+      }
       renderAll();
     } catch (e) {
       toast(e.message, true);

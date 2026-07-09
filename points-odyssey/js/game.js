@@ -136,6 +136,14 @@ export class Game {
     this.selectedCharacters = new Set();
     this.winner = null;
     this.finalScores = null;
+    /** @type {{ playerId: number, from: string, to: string, via: string|null, airline: string }[]} */
+    this.flightAnims = [];
+  }
+
+  consumeFlightAnims() {
+    const list = this.flightAnims || [];
+    this.flightAnims = [];
+    return list;
   }
 
   addLog(msg) {
@@ -649,6 +657,18 @@ export class Game {
     this.addLog(
       `${p.name} flies ${pathLabel} on ${airline} (${legCount} segment${legCount > 1 ? 's' : ''}) for ${cost.toLocaleString()} miles.`
     );
+
+    // Queue map animation (legs for one-stop)
+    if (!this.flightAnims) this.flightAnims = [];
+    for (const leg of itinerary.legs) {
+      this.flightAnims.push({
+        playerId: p.id,
+        from: leg.from,
+        to: leg.to,
+        airline,
+        playerName: p.name,
+      });
+    }
 
     const completedTrips = this.checkTripTickets(p);
     this.checkAchievements(p);
