@@ -37,7 +37,7 @@ Game systems are **inspired by** real US transfer ecosystems (Chase Ultimate Rew
 4. Deal each player **3 Trip Tickets**. Keep **2**, discard 1 face-down to the ticket deck bottom. (You may keep all 3 in a harder variant.)
 5. Shuffle the **Event deck**.
 6. Each player starts with:
-   - **$2,000 cash budget** (abstract spending power each Income phase)
+   - **$5,000 cash budget** (abstract monthly spending power each Income phase)
    - **0** bank / hotel / airline points
    - **No credit cards** yet
 7. Place the board, set **Round marker to 1**, and **Max rounds = 10** (default).
@@ -49,7 +49,7 @@ Game systems are **inspired by** real US transfer ecosystems (Chase Ultimate Rew
 
 Characters do **not** grant earn multipliers. **Earn rates come only from credit cards** (0× without a card).
 
-What characters *do* change is the **probability that each spend category appears** during Income. Each turn the game rolls your **$2,000** budget into several chunks; each chunk lands on a category weighted by your lifestyle profile.
+What characters *do* change is the **probability that each spend category appears** during Income. Each turn the game rolls your **$5,000** monthly budget into several chunks; each chunk lands on a category weighted by your lifestyle profile.
 
 | Character | Spend appearance (approx.) | Special skill |
 |-----------|----------------------------|---------------|
@@ -164,7 +164,7 @@ Example events:
 
 ### 2. Income Phase (mandatory)
 
-1. Roll **lifestyle spend**: category chunks appear according to your character’s probability profile (you may re-roll once via UI, or fine-tune allocation).
+1. Roll **lifestyle spend** ($5,000 monthly budget): category chunks appear according to your character’s probability profile (you may re-roll once via UI, or fine-tune allocation).
 2. For each dollar in a category, earn points on the **best credit card** you hold for that category. **No card → 0×**.
 3. Track **signup bonus progress** toward min-spend on the card that earned the spend.
 
