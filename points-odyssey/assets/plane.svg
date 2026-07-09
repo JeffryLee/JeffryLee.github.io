@@ -1,65 +1,64 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
-  <!-- Top-down airliner, nose points +X (right). Wide swept wings clearly visible. -->
-  <g>
-    <!-- Main wings (wide diamond sweep) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 280" width="200" height="280">
+  <!--
+    Boeing 737–style bird's-eye planform (icon).
+    Nose points UP (negative Y). Transparent background.
+    Features: narrow fuselage, swept wings mid-body, twin under-wing engines,
+    aft horizontal stabilizers, vertical fin.
+  -->
+  <g fill-rule="evenodd">
+    <!-- Wings (swept, mid-fuselage) -->
     <path
-      d="M70 50
-         L28 8
-         L38 14
-         L78 42
-         L118 42
-         L78 50
-         L118 58
-         L78 58
-         L38 86
-         L28 92
-         Z"
+      d="M100 118
+         L22 78 L18 88 L78 128
+         L78 152
+         L18 192 L22 202 L100 162
+         L178 202 L182 192 L122 152
+         L122 128
+         L182 88 L178 78 L100 118 Z"
       fill="#1a2744"
       stroke="#d4a017"
-      stroke-width="1.8"
+      stroke-width="2"
       stroke-linejoin="round"
     />
-    <!-- Wing gold leading-edge accent -->
-    <path d="M32 12 L74 44" stroke="#d4a017" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
-    <path d="M32 88 L74 56" stroke="#d4a017" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+    <!-- Gold leading-edge accents -->
+    <path d="M24 82 L96 120" stroke="#d4a017" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+    <path d="M176 82 L104 120" stroke="#d4a017" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
 
-    <!-- Fuselage -->
-    <ellipse
-      cx="88" cy="50"
-      rx="52" ry="12"
-      fill="#f7f4ee"
-      stroke="#d4a017"
-      stroke-width="1.8"
-    />
-    <!-- Cabin stripe -->
-    <rect x="55" y="46" width="58" height="8" rx="4" fill="#117aca" opacity="0.35"/>
-    <!-- Windows -->
-    <circle cx="118" cy="50" r="2.4" fill="#117aca"/>
-    <circle cx="108" cy="50" r="2.4" fill="#117aca"/>
-    <circle cx="98" cy="50" r="2.4" fill="#117aca"/>
-    <circle cx="88" cy="50" r="2.4" fill="#117aca"/>
-    <circle cx="78" cy="50" r="2.4" fill="#117aca"/>
-    <circle cx="68" cy="50" r="2.4" fill="#117aca"/>
-
-    <!-- Nose cone -->
-    <path d="M136 50 L156 50 L138 43 L138 57 Z" fill="#d4a017"/>
-    <ellipse cx="136" cy="50" rx="6" ry="9" fill="#f7f4ee" stroke="#d4a017" stroke-width="1"/>
-
-    <!-- Engines under wings -->
-    <ellipse cx="62" cy="30" rx="11" ry="5" fill="#c4b8a0" stroke="#1a2744" stroke-width="1"/>
-    <ellipse cx="62" cy="70" rx="11" ry="5" fill="#c4b8a0" stroke="#1a2744" stroke-width="1"/>
-    <rect x="68" y="27" width="8" height="6" rx="1" fill="#1a2744"/>
-    <rect x="68" y="67" width="8" height="6" rx="1" fill="#1a2744"/>
-
-    <!-- Horizontal stabilizers (tail) -->
-    <path
-      d="M30 50 L12 34 L18 50 L12 66 Z"
-      fill="#1a2744"
-      stroke="#d4a017"
-      stroke-width="1.4"
-      stroke-linejoin="round"
-    />
-    <!-- Vertical fin (top view as small diamond) -->
-    <path d="M22 50 L14 50 L18 40 L26 48 Z" fill="#117aca" stroke="#d4a017" stroke-width="1"/>
+    <!-- Twin engines (one under each wing) -->
+    <ellipse cx="58" cy="112" rx="16" ry="9" fill="#9a948c" stroke="#1a2744" stroke-width="1.5"/>
+    <ellipse cx="142" cy="112" rx="16" ry="9" fill="#9a948c" stroke="#1a2744" stroke-width="1.5"/>
+    <rect x="66" y="106" width="12" height="12" rx="2" fill="#2a3548"/>
+    <rect x="122" y="106" width="12" height="12" rx="2" fill="#2a3548"/>
+    <!-- aft edge of engines near wing trailing -->
+    <ellipse cx="58" cy="158" rx="16" ry="9" fill="#9a948c" stroke="#1a2744" stroke-width="1.5" opacity="0"/>
+    <!-- only two engines - remove false second pair: engines only once at mid wing -->
   </g>
+  <!-- Fuselage on top of wing roots -->
+  <ellipse cx="100" cy="140" rx="16" ry="108" fill="#f4f1ea" stroke="#d4a017" stroke-width="2"/>
+  <!-- Cockpit / nose -->
+  <ellipse cx="100" cy="38" rx="11" ry="22" fill="#e8e4dc" stroke="#d4a017" stroke-width="1.5"/>
+  <ellipse cx="100" cy="28" rx="7" ry="8" fill="#117aca" opacity="0.85"/>
+  <!-- Cabin windows -->
+  <g fill="#117aca">
+    <circle cx="100" cy="70" r="2.5"/>
+    <circle cx="100" cy="85" r="2.5"/>
+    <circle cx="100" cy="100" r="2.5"/>
+    <circle cx="100" cy="115" r="2.5"/>
+    <circle cx="100" cy="165" r="2.5"/>
+    <circle cx="100" cy="180" r="2.5"/>
+    <circle cx="100" cy="195" r="2.5"/>
+    <circle cx="100" cy="210" r="2.5"/>
+  </g>
+  <!-- Horizontal stabilizers -->
+  <path
+    d="M100 230 L48 248 L54 254 L100 242 L146 254 L152 248 Z"
+    fill="#1a2744"
+    stroke="#d4a017"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <!-- Vertical fin (top view = small diamond aft) -->
+  <path d="M100 220 L92 248 L100 256 L108 248 Z" fill="#117aca" stroke="#d4a017" stroke-width="1"/>
+  <!-- Tail cone -->
+  <ellipse cx="100" cy="248" rx="7" ry="14" fill="#e8e4dc" stroke="#d4a017" stroke-width="1"/>
 </svg>

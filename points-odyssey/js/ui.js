@@ -381,15 +381,16 @@ function animateFlightLeg({
       g.appendChild(headG);
     }
 
-    // Plane body (wide wings SVG, nose +X)
-    const planeW = 52;
-    const planeH = 32;
+    // Boeing 737 bird's-eye icon (transparent PNG; art nose points up → rotate +90° so nose = +X)
+    const planeSize = 48;
     const plane = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-    plane.setAttribute('href', 'assets/plane.svg');
-    plane.setAttribute('width', String(planeW));
-    plane.setAttribute('height', String(planeH));
-    plane.setAttribute('x', String(-planeW / 2));
-    plane.setAttribute('y', String(-planeH / 2));
+    plane.setAttribute('href', 'assets/plane.png');
+    plane.setAttribute('width', String(planeSize));
+    plane.setAttribute('height', String(planeSize));
+    plane.setAttribute('x', String(-planeSize / 2));
+    plane.setAttribute('y', String(-planeSize / 2));
+    // Nose-up art → rotate 90° around icon center so nose faces path +X
+    plane.setAttribute('transform', 'rotate(90 0 0)');
     plane.setAttribute('class', 'flight-plane-img');
     g.appendChild(plane);
 
