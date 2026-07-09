@@ -461,12 +461,9 @@ a:hover, a:focus { color: var(--link-hover); }
   background: var(--accent);
 }
 
-.exp-mini-grid {
-  margin-top: 0.9rem;
-}
-
-.teaching-panel {
-  margin-top: 0.9rem;
+.exp-advisor {
+  margin: -0.35rem 0 0.95rem;
+  line-height: 1.55;
 }
 
 /* ===== Publications ===== */
