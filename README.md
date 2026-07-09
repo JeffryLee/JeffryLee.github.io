@@ -39,7 +39,6 @@ For a custom domain, add a `CNAME` file and configure DNS.
 │   ├── profile.png     # Portrait
 │   ├── hero-bg.jpg     # Hero background
 │   ├── favicon.svg
-│   └── CV-Zhuqi-Li.pdf
 └── README.md
 ```
 
