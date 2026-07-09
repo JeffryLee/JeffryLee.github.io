@@ -37,10 +37,11 @@ function emptyAirlines() {
   return { united: 0, delta: 0, american: 0 };
 }
 
-function createPlayer(index, character, name) {
+function createPlayer(index, character, name, isBot = false) {
   return {
     id: index,
     name: name || `Player ${index + 1}`,
+    isBot: !!isBot,
     characterId: character.id,
     character,
     city: character.homeCity,
@@ -145,9 +146,9 @@ export class Game {
     return GAME_CONFIG.defaultCardLimit + (player.character.cardLimitBonus || 0);
   }
 
-  /** Setup: create players from chosen character ids + names */
+  /** Setup: create players from chosen character ids + names + isBot */
   startGame(selections) {
-    // selections: [{ characterId, name }]
+    // selections: [{ characterId, name, isBot? }]
     if (
       selections.length < GAME_CONFIG.minPlayers ||
       selections.length > GAME_CONFIG.maxPlayers
@@ -162,7 +163,11 @@ export class Game {
       used.add(sel.characterId);
       const ch = CHARACTERS.find((c) => c.id === sel.characterId);
       if (!ch) throw new Error('Unknown character');
-      return createPlayer(i, ch, sel.name);
+      const isBot = !!sel.isBot;
+      const name =
+        sel.name ||
+        (isBot ? `Bot ${ch.name.replace(/^The /, '')}` : `Player ${i + 1}`);
+      return createPlayer(i, ch, name, isBot);
     });
 
     this.ticketDeck = shuffle(TRIP_TICKETS);
@@ -956,6 +961,7 @@ export class Game {
       players: this.players.map((p) => ({
         id: p.id,
         name: p.name,
+        isBot: !!p.isBot,
         character: p.character,
         city: p.city,
         visited: [...p.visited],

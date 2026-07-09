@@ -169,15 +169,76 @@ button {
   overflow: hidden;
   padding: 0;
   transition: border-color 0.15s, transform 0.12s;
+  color: inherit;
 }
 
-.char-card:hover:not(:disabled) {
+.char-card:hover:not(.taken) {
   border-color: var(--gold);
   transform: translateY(-2px);
 }
 
 .char-card.taken {
-  opacity: 0.4;
+  opacity: 0.55;
+}
+
+.char-join-btns {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.char-join-btns .btn {
+  flex: 1;
+  min-width: 5.5rem;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.btn-add-bot {
+  border-color: rgba(155, 89, 182, 0.5);
+}
+
+.seat-kind {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--cream-dim);
+  font-style: normal;
+  margin-top: 0.1rem;
+}
+
+.lobby-player.is-bot .seat-kind {
+  color: #c39bd3;
+}
+
+.lobby-player .toggle-bot {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--cream-dim);
+  font-size: 0.68rem;
+  padding: 0.15rem 0.35rem;
+  cursor: pointer;
+  margin-left: 0.25rem;
+}
+
+.lobby-player .toggle-bot:hover {
+  border-color: var(--gold);
+  color: var(--gold-soft);
+}
+
+.bot-badge {
+  font-size: 0.65rem;
+  background: #6c3483;
+  color: #f5eef8;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  margin-left: 0.25rem;
+  vertical-align: middle;
+}
+
+.p-chip.bot-chip {
+  border-color: rgba(155, 89, 182, 0.45);
 }
 
 .char-card img {

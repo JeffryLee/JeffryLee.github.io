@@ -14,9 +14,13 @@ import {
   listFlightOptions,
 } from './game.js';
 import { BANKS, HOTELS, AIRLINES, getRoute } from './data.js';
+import { playBotActions } from './bot.js';
 
 const game = new Game();
 let setupSelections = [];
+/** Prevent overlapping bot auto-play */
+let botRunning = false;
+const BOT_STEP_MS = 700;
 
 const $ = (sel, el = document) => el.querySelector(sel);
 const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
@@ -106,34 +110,49 @@ function renderSetup() {
     const taken = setupSelections.some((s) => s.characterId === c.id);
     const home = CITIES[c.homeCity] ? CITIES[c.homeCity].name : c.homeCity;
     return `
-      <button type="button" class="char-card has-tooltip ${taken ? 'taken' : ''}" data-id="${c.id}" ${taken ? 'disabled' : ''} title="${characterSkillsTitle(c).replace(/"/g, '&quot;')}">
+      <div class="char-card has-tooltip ${taken ? 'taken' : ''}" data-id="${c.id}">
         <img src="${c.image}" alt="${c.name}" />
         <div class="char-info">
           <h3>${c.name}</h3>
           <p>${c.blurb}</p>
           <p class="special">${c.specialDesc}</p>
           <p class="home">Home: ${home}</p>
-          <p class="hover-hint">Hover for full skills</p>
+          ${
+            taken
+              ? `<p class="hover-hint">Already in lobby</p>`
+              : `<div class="char-join-btns">
+                  <button type="button" class="btn primary btn-add-human" data-id="${c.id}">👤 Player</button>
+                  <button type="button" class="btn btn-add-bot" data-id="${c.id}">🤖 Bot</button>
+                </div>`
+          }
         </div>
         ${characterSkillsHtml(c)}
-      </button>
+      </div>
     `;
   }).join('');
 
   grid.onclick = (e) => {
-    const btn = e.target.closest('.char-card');
-    if (!btn || btn.disabled) return;
+    const humanBtn = e.target.closest('.btn-add-human');
+    const botBtn = e.target.closest('.btn-add-bot');
+    const btn = humanBtn || botBtn;
+    if (!btn) return;
     const id = btn.dataset.id;
+    if (setupSelections.some((s) => s.characterId === id)) return;
     if (setupSelections.length >= GAME_CONFIG.maxPlayers) {
       toast('Max 6 players', true);
       return;
     }
-    const name =
-      prompt(
-        `Name for ${CHARACTERS.find((c) => c.id === id).name}?`,
-        `Player ${setupSelections.length + 1}`
-      ) || `Player ${setupSelections.length + 1}`;
-    setupSelections.push({ characterId: id, name });
+    const ch = CHARACTERS.find((c) => c.id === id);
+    const isBot = !!botBtn;
+    let name;
+    if (isBot) {
+      name = `Bot ${ch.name.replace(/^The /, '')}`;
+    } else {
+      name =
+        prompt(`Name for ${ch.name}?`, `Player ${setupSelections.length + 1}`) ||
+        `Player ${setupSelections.length + 1}`;
+    }
+    setupSelections.push({ characterId: id, name, isBot });
     renderLobby();
     renderSetup();
   };
@@ -144,17 +163,22 @@ function renderSetup() {
 function renderLobby() {
   const list = $('#lobby-list');
   list.innerHTML = setupSelections
-    .map(
-      (s, i) => {
-        const c = CHARACTERS.find((x) => x.id === s.characterId);
-        return `<li class="has-tooltip lobby-player">
+    .map((s, i) => {
+      const c = CHARACTERS.find((x) => x.id === s.characterId);
+      const kind = s.isBot ? '🤖 Bot' : '👤 Player';
+      return `<li class="has-tooltip lobby-player ${s.isBot ? 'is-bot' : 'is-human'}">
           <img src="${c.image}" alt="" />
-          <span><strong>${s.name}</strong> — ${c.name}</span>
+          <span>
+            <strong>${s.name}</strong> — ${c.name}
+            <em class="seat-kind">${kind}</em>
+          </span>
+          <button type="button" data-i="${i}" class="toggle-bot" title="Toggle player/bot">${
+            s.isBot ? '→ Player' : '→ Bot'
+          }</button>
           <button type="button" data-i="${i}" class="remove-p">✕</button>
           ${characterSkillsHtml(c)}
         </li>`;
-      }
-    )
+    })
     .join('');
 
   list.onclick = (e) => {
@@ -162,15 +186,31 @@ function renderLobby() {
       setupSelections.splice(+e.target.dataset.i, 1);
       renderLobby();
       renderSetup();
+      return;
+    }
+    if (e.target.classList.contains('toggle-bot')) {
+      const i = +e.target.dataset.i;
+      const s = setupSelections[i];
+      s.isBot = !s.isBot;
+      const c = CHARACTERS.find((x) => x.id === s.characterId);
+      if (s.isBot) {
+        s.name = `Bot ${c.name.replace(/^The /, '')}`;
+      } else if (s.name.startsWith('Bot ')) {
+        s.name = `Player ${i + 1}`;
+      }
+      renderLobby();
+      renderSetup();
     }
   };
 
   const startBtn = $('#start-game');
+  const humans = setupSelections.filter((s) => !s.isBot).length;
+  const bots = setupSelections.filter((s) => s.isBot).length;
   startBtn.disabled = setupSelections.length < GAME_CONFIG.minPlayers;
   startBtn.textContent =
     setupSelections.length < GAME_CONFIG.minPlayers
-      ? `Need ${GAME_CONFIG.minPlayers}+ players (${setupSelections.length})`
-      : `Start Game (${setupSelections.length} players)`;
+      ? `Need ${GAME_CONFIG.minPlayers}+ seats (${setupSelections.length})`
+      : `Start (${humans} player${humans === 1 ? '' : 's'}, ${bots} bot${bots === 1 ? '' : 's'})`;
 }
 
 // ——— Main render ———
@@ -186,14 +226,21 @@ function renderAll() {
   const cur = snap.players[snap.currentPlayerIndex];
 
   $('#round-label').textContent = `Round ${snap.round} / ${snap.maxRounds}`;
-  $('#turn-label').textContent = `${cur.name}'s turn`;
-  $('#actions-left').textContent = `${cur.turn?.actionsLeft ?? 0} actions left`;
+  $('#turn-label').textContent = cur.isBot
+    ? `🤖 ${cur.name}'s turn`
+    : `${cur.name}'s turn`;
+  $('#actions-left').textContent = `${(cur.turn && cur.turn.actionsLeft) || 0} actions left`;
 
   renderPlayersBar(snap);
   renderMap(snap);
   renderHand(cur, snap);
   renderLog(snap);
   renderPhasePanel(cur, snap);
+
+  // Auto-play bots
+  if (cur.isBot && !botRunning) {
+    scheduleBotTurn();
+  }
 }
 
 function renderPlayersBar(snap) {
@@ -201,11 +248,12 @@ function renderPlayersBar(snap) {
   bar.innerHTML = snap.players
     .map((p, i) => {
       const active = i === snap.currentPlayerIndex ? 'active' : '';
+      const botTag = p.isBot ? ' <span class="bot-badge">BOT</span>' : '';
       return `
-        <div class="p-chip has-tooltip ${active}" title="${characterSkillsTitle(p.character).replace(/"/g, '&quot;')}">
+        <div class="p-chip has-tooltip ${active} ${p.isBot ? 'bot-chip' : ''}" title="${characterSkillsTitle(p.character).replace(/"/g, '&quot;')}">
           <img src="${p.character.image}" alt="" />
           <div>
-            <strong>${p.name}</strong>
+            <strong>${p.name}${botTag}</strong>
             <span>${p.vp} VP · ${p.city}</span>
           </div>
           ${characterSkillsHtml(p.character)}
@@ -213,6 +261,73 @@ function renderPlayersBar(snap) {
       `;
     })
     .join('');
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function scheduleBotTurn() {
+  if (botRunning) return;
+  if (game.phase !== 'playing') return;
+  const p = game.currentPlayer;
+  if (!p || !p.isBot) return;
+
+  botRunning = true;
+  try {
+    toast(`🤖 ${p.name} is thinking…`);
+    await sleep(BOT_STEP_MS);
+    if (game.phase !== 'playing' || game.currentPlayer.id !== p.id) {
+      botRunning = false;
+      return;
+    }
+
+    const { logs } = playBotActions(game);
+    for (const line of logs.slice(0, 4)) {
+      // brief feedback; full detail in game log
+    }
+    if (logs.length) {
+      toast(`🤖 ${logs[logs.length - 1]}`);
+    }
+    renderAll();
+    await sleep(BOT_STEP_MS);
+
+    if (game.phase !== 'playing') {
+      botRunning = false;
+      renderGameOver();
+      return;
+    }
+
+    const res = game.endTurn();
+    botRunning = false;
+    if (res.gameOver) {
+      renderGameOver();
+    } else {
+      renderAll();
+      toast(
+        game.currentPlayer.isBot
+          ? `🤖 ${game.currentPlayer.name}'s turn`
+          : `${game.currentPlayer.name}'s turn — you're up!`
+      );
+    }
+  } catch (e) {
+    botRunning = false;
+    console.error(e);
+    toast(`Bot error: ${e.message}`, true);
+    // Try to unstick: end turn if possible
+    try {
+      if (game.phase === 'playing' && game.currentPlayer.isBot) {
+        if (!game.currentPlayer.turn.incomeDone) {
+          game.doIncome(game.autoAllocate(game.currentPlayer));
+        }
+        const res = game.endTurn();
+        if (res.gameOver) renderGameOver();
+        else renderAll();
+      }
+    } catch (e2) {
+      console.error(e2);
+    }
+  }
 }
 
 function renderMap(snap) {
@@ -445,6 +560,21 @@ function renderLog(snap) {
 function renderPhasePanel(cur, snap) {
   const panel = $('#phase-panel');
   if (!cur.turn) return;
+
+  // Bot turn — human controls locked
+  if (cur.isBot) {
+    panel.innerHTML = `
+      <h3>🤖 Bot turn</h3>
+      <p><strong>${cur.name}</strong> (${cur.character.name}) is playing automatically…</p>
+      <p class="muted">Event: ${cur.turn.event ? cur.turn.event.name : '—'}</p>
+      <div class="spend-roll-box">
+        <div class="spend-roll-label">Lifestyle spend</div>
+        <div class="spend-roll-chips">${formatSpendRollHtml(cur.turn.spendRoll)}</div>
+      </div>
+      <p class="char-tip">Strategy: complete tickets by flying to both cities, transfer points, book hotels for VP, open a second card when useful.</p>
+    `;
+    return;
+  }
 
   if (!cur.turn.incomeDone) {
     panel.innerHTML = `
@@ -984,26 +1114,34 @@ function wireNav() {
 
   $('#start-game').onclick = () => {
     try {
+      botRunning = false;
       game.startGame(setupSelections);
       showScreen('screen-game');
       renderAll();
-      toast(`Round 1 — ${game.currentPlayer.name} starts`);
+      const cur = game.currentPlayer;
+      toast(
+        cur.isBot
+          ? `Round 1 — 🤖 ${cur.name} starts`
+          : `Round 1 — ${cur.name} starts`
+      );
     } catch (e) {
       toast(e.message, true);
     }
   };
 
-  // Quick demo: 3 random players
+  // Quick demo: 1 human + 2 bots
   $('#btn-quick-demo')?.addEventListener('click', () => {
     const picks = [...CHARACTERS].sort(() => Math.random() - 0.5).slice(0, 3);
     setupSelections = picks.map((c, i) => ({
       characterId: c.id,
-      name: ['Alex', 'Blake', 'Casey'][i],
+      name: i === 0 ? 'You' : `Bot ${c.name.replace(/^The /, '')}`,
+      isBot: i !== 0,
     }));
+    botRunning = false;
     game.startGame(setupSelections);
     showScreen('screen-game');
     renderAll();
-    toast('Quick demo: 3 players dealt');
+    toast('Quick demo: you + 2 bots');
   });
 }
 
