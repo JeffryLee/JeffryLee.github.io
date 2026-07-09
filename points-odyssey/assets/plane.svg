@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Clean top-down jet, nose points +X (right) for path-following rotation -->
+  <g fill="none" fill-rule="evenodd">
+    <!-- Wings -->
+    <path d="M58 64 L14 28 L22 64 L14 100 Z" fill="#1a2744" stroke="#d4a017" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- Tail wings -->
+    <path d="M20 64 L6 48 L10 64 L6 80 Z" fill="#1a2744" stroke="#d4a017" stroke-width="1" stroke-linejoin="round"/>
+    <!-- Fuselage -->
+    <ellipse cx="72" cy="64" rx="42" ry="11" fill="#f7f4ee" stroke="#d4a017" stroke-width="1.5"/>
+    <!-- Nose -->
+    <path d="M112 64 L124 64 L112 58 L112 70 Z" fill="#d4a017"/>
+    <!-- Windows -->
+    <circle cx="98" cy="64" r="2.2" fill="#117aca"/>
+    <circle cx="88" cy="64" r="2.2" fill="#117aca"/>
+    <circle cx="78" cy="64" r="2.2" fill="#117aca"/>
+    <circle cx="68" cy="64" r="2.2" fill="#117aca"/>
+    <!-- Engine pods -->
+    <ellipse cx="52" cy="48" rx="8" ry="3.5" fill="#c4b8a0"/>
+    <ellipse cx="52" cy="80" rx="8" ry="3.5" fill="#c4b8a0"/>
+    <!-- Tail fin -->
+    <path d="M18 64 L8 64 L12 50 L22 60 Z" fill="#117aca" stroke="#d4a017" stroke-width="0.8"/>
+  </g>
+</svg>

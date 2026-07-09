@@ -314,13 +314,12 @@ function animateFlightLeg(fromId, toId, airline, durationMs = 1100) {
     g.setAttribute('class', 'flight-plane');
     const planeSize = 36;
     const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-    img.setAttribute('href', 'assets/plane.png');
+    // Clean vector plane (nose points +X; path rotation handles heading)
+    img.setAttribute('href', 'assets/plane.svg');
     img.setAttribute('width', String(planeSize));
     img.setAttribute('height', String(planeSize));
     img.setAttribute('x', String(-planeSize / 2));
     img.setAttribute('y', String(-planeSize / 2));
-    // Plane art faces up; rotate so nose follows path
-    img.setAttribute('transform', 'rotate(90)');
     g.appendChild(img);
     svg.appendChild(g);
 
