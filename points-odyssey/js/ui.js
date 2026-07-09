@@ -1167,6 +1167,10 @@ function openFlightModal() {
     `Book flight from ${from}`,
     `
       <p class="muted">Nonstop or <strong>1 stop</strong> (same airline). Visit both ticket cities to complete trips.</p>
+      <label class="field flight-search-field">
+        Search destination
+        <input type="search" id="flight-search" placeholder="e.g. Miami, LAX, Denver…" autocomplete="off" />
+      </label>
       <label class="field" style="margin-bottom:0.5rem">
         <span>Show
           <select id="flight-filter">
@@ -1176,6 +1180,7 @@ function openFlightModal() {
           </select>
         </span>
       </label>
+      <p id="flight-search-count" class="muted" style="margin:0 0 0.4rem;font-size:0.78rem"></p>
       <div class="flight-list" id="flight-list"></div>
       <label class="field">Pay with airline
         <select id="flight-airline"></select>
@@ -1202,16 +1207,89 @@ function openFlightModal() {
     }
   );
 
+  const cityMatchesQuery = (cityId, q) => {
+    if (!q) return true;
+    const city = CITIES[cityId];
+    if (!city) return cityId.toLowerCase().includes(q);
+    const name = (city.name || '').toLowerCase();
+    const id = (city.id || '').toLowerCase();
+    // Match code, full name, or start of any word (e.g. "los" → Los Angeles)
+    if (id.includes(q) || name.includes(q)) return true;
+    if (name.split(/\s+/).some((w) => w.startsWith(q))) return true;
+    // Common aliases
+    const aliases = {
+      nyc: ['new york', 'ny'],
+      lax: ['los angeles', 'la'],
+      sfo: ['san francisco', 'sf'],
+      ord: ['chicago'],
+      dfw: ['dallas'],
+      iah: ['houston'],
+      sea: ['seattle'],
+      den: ['denver'],
+      atl: ['atlanta'],
+      mia: ['miami'],
+      bos: ['boston'],
+      was: ['washington', 'dc', 'd.c.', 'washington dc'],
+      phx: ['phoenix'],
+      las: ['las vegas', 'vegas'],
+      msp: ['minneapolis'],
+      msy: ['new orleans'],
+    };
+    const al = aliases[id] || [];
+    if (al.some((a) => a.includes(q) || q.includes(a))) return true;
+    return false;
+  };
+
   const renderFlightList = () => {
     const filter = ($('#flight-filter') && $('#flight-filter').value) || 'nonstop';
-    const filtered = options.filter((opt) => {
-      if (filter === 'nonstop') return opt.stops === 0;
-      if (filter === 'onestop') return opt.stops === 1;
-      return true;
+    const rawQ = ($('#flight-search') && $('#flight-search').value) || '';
+    const q = rawQ.trim().toLowerCase();
+
+    let filtered = options.filter((opt) => {
+      if (filter === 'nonstop' && opt.stops !== 0) return false;
+      if (filter === 'onestop' && opt.stops !== 1) return false;
+      if (!q) return true;
+      // Match destination, via city, or path codes
+      if (cityMatchesQuery(opt.to, q)) return true;
+      if (opt.via && cityMatchesQuery(opt.via, q)) return true;
+      const path = `${opt.to} ${opt.via || ''}`.toLowerCase();
+      if (path.includes(q)) return true;
+      return false;
     });
+
+    // Prefer exact code / name matches first when searching
+    if (q) {
+      filtered = [...filtered].sort((a, b) => {
+        const aExact =
+          a.to.toLowerCase() === q ||
+          (CITIES[a.to] && CITIES[a.to].name.toLowerCase() === q)
+            ? 0
+            : 1;
+        const bExact =
+          b.to.toLowerCase() === q ||
+          (CITIES[b.to] && CITIES[b.to].name.toLowerCase() === q)
+            ? 0
+            : 1;
+        return aExact - bExact || a.stops - b.stops || a.baseCost - b.baseCost;
+      });
+    }
+
+    const countEl = $('#flight-search-count');
+    if (countEl) {
+      countEl.textContent = q
+        ? `${filtered.length} route${filtered.length === 1 ? '' : 's'} matching “${rawQ.trim()}”`
+        : `${filtered.length} route${filtered.length === 1 ? '' : 's'} shown`;
+    }
+
     const list = $('#flight-list');
     if (!filtered.length) {
-      list.innerHTML = `<p class="muted">No flights in this filter. Try “All”.</p>`;
+      list.innerHTML = q
+        ? `<p class="muted">No flights match “${rawQ.trim()}”. Try a city name or code (e.g. Miami, LAX).</p>`
+        : `<p class="muted">No flights in this filter. Try “All”.</p>`;
+      const airSel = $('#flight-airline');
+      if (airSel) airSel.innerHTML = '';
+      const costEl = $('#flight-cost');
+      if (costEl) costEl.textContent = '';
       return;
     }
     list.innerHTML = filtered
@@ -1277,6 +1355,20 @@ function openFlightModal() {
   };
 
   $('#flight-filter').onchange = renderFlightList;
+  const searchInput = $('#flight-search');
+  if (searchInput) {
+    searchInput.oninput = renderFlightList;
+    searchInput.onkeydown = (e) => {
+      // Escape clears search
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        renderFlightList();
+        e.preventDefault();
+      }
+    };
+    // Focus search for quick typing
+    setTimeout(() => searchInput.focus(), 50);
+  }
   renderFlightList();
 }
 

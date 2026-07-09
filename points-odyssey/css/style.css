@@ -1045,6 +1045,26 @@ button {
   overflow-y: auto;
 }
 
+.flight-search-field input[type='search'] {
+  background: var(--navy);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  width: 100%;
+  color: var(--cream);
+}
+
+.flight-search-field input[type='search']:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px rgba(212, 160, 23, 0.35);
+}
+
+.flight-search-field input[type='search']::placeholder {
+  color: var(--cream-dim);
+  opacity: 0.75;
+}
+
 .ticket-pick {
   display: flex;
   flex-direction: column;
