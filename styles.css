@@ -240,13 +240,13 @@ a:hover, a:focus { color: var(--link-hover); }
 }
 
 .portrait-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 0.95rem;
-  box-shadow: 0 15px 40px rgba(19, 38, 63, 0.08);
   max-width: 280px;
   width: 100%;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
 .portrait {
@@ -254,6 +254,7 @@ a:hover, a:focus { color: var(--link-hover); }
   border-radius: 12px;
   aspect-ratio: 1;
   object-fit: cover;
+  display: block;
 }
 
 /* ===== Sections ===== */
