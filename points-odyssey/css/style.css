@@ -1191,16 +1191,18 @@ button {
   background: #0078d2;
 }
 
-/* Flight animation plane + trail */
+/* Flight animation plane + headshot + trail */
 .flight-plane {
   pointer-events: none;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
 }
 
-.flight-plane image {
-  /* subtle lift */
-  transform-box: fill-box;
-  transform-origin: center;
+.flight-plane-img {
+  /* wings read better slightly larger */
+}
+
+.flight-head-g {
+  pointer-events: none;
 }
 
 .flight-trail {

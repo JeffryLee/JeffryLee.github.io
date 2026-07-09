@@ -276,9 +276,23 @@ function cityXY(cityId, w = 1000, h = 620) {
 }
 
 /**
- * Animate plane along legs (from→to). Supports multi-leg one-stop.
+ * Animate plane + character headshot along a flight leg.
+ * @param {object} opts
+ * @param {string} opts.fromId
+ * @param {string} opts.toId
+ * @param {string} opts.airline
+ * @param {string} [opts.portrait] character image URL
+ * @param {string} [opts.ringColor] head ring color
+ * @param {number} [opts.durationMs]
  */
-function animateFlightLeg(fromId, toId, airline, durationMs = 1100) {
+function animateFlightLeg({
+  fromId,
+  toId,
+  airline,
+  portrait,
+  ringColor,
+  durationMs = 1100,
+}) {
   return new Promise((resolve) => {
     const svg = $('#map-svg');
     if (!svg) {
@@ -291,53 +305,113 @@ function animateFlightLeg(fromId, toId, airline, durationMs = 1100) {
     const b = cityXY(toId, w, h);
     const dx = b.x - a.x;
     const dy = b.y - a.y;
-    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    const angle0 = (Math.atan2(dy, dx) * 180) / Math.PI;
     const color =
       (AIRLINES[airline] && AIRLINES[airline].color) || '#f0e6d3';
+    const ring = ringColor || color;
 
-    // Trail path
+    // Trail path (curved)
     const trail = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     const mx = (a.x + b.x) / 2;
-    const my = (a.y + b.y) / 2 - Math.min(40, Math.hypot(dx, dy) * 0.12);
+    const my = (a.y + b.y) / 2 - Math.min(48, Math.hypot(dx, dy) * 0.14);
     const d = `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`;
     trail.setAttribute('d', d);
     trail.setAttribute('fill', 'none');
     trail.setAttribute('stroke', color);
-    trail.setAttribute('stroke-width', '2');
-    trail.setAttribute('stroke-dasharray', '6 4');
-    trail.setAttribute('opacity', '0.85');
+    trail.setAttribute('stroke-width', '2.5');
+    trail.setAttribute('stroke-dasharray', '7 5');
+    trail.setAttribute('opacity', '0.9');
     trail.setAttribute('class', 'flight-trail');
     svg.appendChild(trail);
 
-    // Plane group
+    // Moving group: plane + headshot travel together
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('class', 'flight-plane');
-    const planeSize = 36;
-    const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-    // Clean vector plane (nose points +X; path rotation handles heading)
-    img.setAttribute('href', 'assets/plane.svg');
-    img.setAttribute('width', String(planeSize));
-    img.setAttribute('height', String(planeSize));
-    img.setAttribute('x', String(-planeSize / 2));
-    img.setAttribute('y', String(-planeSize / 2));
-    g.appendChild(img);
+
+    // Headshot behind / slightly offset from plane so both are visible
+    const headR = 15;
+    const headOffsetY = -28; // above plane in local coords (before path rotation)
+    if (portrait) {
+      const clipId = `fly-head-clip-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const defs =
+        svg.querySelector('defs') ||
+        (() => {
+          const d = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+          svg.insertBefore(d, svg.firstChild);
+          return d;
+        })();
+      const clip = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+      clip.setAttribute('id', clipId);
+      const clipC = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      clipC.setAttribute('cx', '0');
+      clipC.setAttribute('cy', String(headOffsetY));
+      clipC.setAttribute('r', String(headR));
+      clip.appendChild(clipC);
+      defs.appendChild(clip);
+
+      const headBg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      headBg.setAttribute('cx', '0');
+      headBg.setAttribute('cy', String(headOffsetY));
+      headBg.setAttribute('r', String(headR + 2));
+      headBg.setAttribute('fill', '#0a1224');
+      headBg.setAttribute('stroke', ring);
+      headBg.setAttribute('stroke-width', '2.5');
+      g.appendChild(headBg);
+
+      const head = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      head.setAttribute('href', portrait);
+      head.setAttribute('x', String(-headR));
+      head.setAttribute('y', String(headOffsetY - headR));
+      head.setAttribute('width', String(headR * 2));
+      head.setAttribute('height', String(headR * 2));
+      head.setAttribute('clip-path', `url(#${clipId})`);
+      head.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+      // Counter-rotate head later so face stays upright — applied in frame
+      head.setAttribute('class', 'flight-head');
+      g.appendChild(head);
+
+      // Keep head upright: nest in counter-rotating group
+      // Rebuild head as subgroup for upright orientation
+      headBg.remove();
+      head.remove();
+      const headG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      headG.setAttribute('class', 'flight-head-g');
+      headG.appendChild(headBg);
+      headG.appendChild(head);
+      g.appendChild(headG);
+    }
+
+    // Plane body (wide wings SVG, nose +X)
+    const planeW = 52;
+    const planeH = 32;
+    const plane = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+    plane.setAttribute('href', 'assets/plane.svg');
+    plane.setAttribute('width', String(planeW));
+    plane.setAttribute('height', String(planeH));
+    plane.setAttribute('x', String(-planeW / 2));
+    plane.setAttribute('y', String(-planeH / 2));
+    plane.setAttribute('class', 'flight-plane-img');
+    g.appendChild(plane);
+
     svg.appendChild(g);
 
     const start = performance.now();
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
-      // ease-in-out
       const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      // Quadratic Bezier point
       const omt = 1 - e;
       const x = omt * omt * a.x + 2 * omt * e * mx + e * e * b.x;
       const y = omt * omt * a.y + 2 * omt * e * my + e * e * b.y;
-      // Tangent for rotation
       const tx = 2 * omt * (mx - a.x) + 2 * e * (b.x - mx);
       const ty = 2 * omt * (my - a.y) + 2 * e * (b.y - my);
       const rot = (Math.atan2(ty, tx) * 180) / Math.PI;
       g.setAttribute('transform', `translate(${x}, ${y}) rotate(${rot})`);
-      trail.setAttribute('opacity', String(0.3 + 0.55 * (1 - t)));
+      // Keep portrait upright (counter-rotate)
+      const headG = g.querySelector('.flight-head-g');
+      if (headG) {
+        headG.setAttribute('transform', `rotate(${-rot})`);
+      }
+      trail.setAttribute('opacity', String(0.35 + 0.5 * (1 - t)));
       if (t < 1) {
         requestAnimationFrame(frame);
       } else {
@@ -346,8 +420,9 @@ function animateFlightLeg(fromId, toId, airline, durationMs = 1100) {
         resolve();
       }
     }
-    // Initial position
-    g.setAttribute('transform', `translate(${a.x}, ${a.y}) rotate(${angle})`);
+    g.setAttribute('transform', `translate(${a.x}, ${a.y}) rotate(${angle0})`);
+    const headG0 = g.querySelector('.flight-head-g');
+    if (headG0) headG0.setAttribute('transform', `rotate(${-angle0})`);
     requestAnimationFrame(frame);
   });
 }
@@ -356,17 +431,43 @@ async function playPendingFlightAnims() {
   const anims = game.consumeFlightAnims();
   if (!anims.length) return;
   flightAnimPlaying = true;
+  const snap0 = game.phase === 'playing' ? game.snapshot() : null;
+
   for (const anim of anims) {
-    mapCityOverride = { playerId: anim.playerId, city: anim.from };
-    // Keep pawn at departure during this leg
+    // Hide static head icon while this player is flying
+    mapCityOverride = { playerId: anim.playerId, hide: true };
     if (game.phase === 'playing') {
       const snap = game.snapshot();
       renderMap(snap);
       renderPlayersBar(snap);
     }
-    await animateFlightLeg(anim.from, anim.to, anim.airline, 1000);
-    // After leg, override to destination for multi-leg
-    mapCityOverride = { playerId: anim.playerId, city: anim.to };
+
+    const player =
+      game.players && game.players.find((p) => p.id === anim.playerId);
+    const portrait =
+      (player && player.character && player.character.image) ||
+      (snap0 &&
+        snap0.players.find((p) => p.id === anim.playerId) &&
+        snap0.players.find((p) => p.id === anim.playerId).character.image) ||
+      null;
+    const ringColors = [
+      '#e74c3c',
+      '#3498db',
+      '#2ecc71',
+      '#f39c12',
+      '#9b59b6',
+      '#1abc9c',
+    ];
+    const ringColor = ringColors[(anim.playerId || 0) % ringColors.length];
+
+    await animateFlightLeg({
+      fromId: anim.from,
+      toId: anim.to,
+      airline: anim.airline,
+      portrait,
+      ringColor,
+      durationMs: 1100,
+    });
   }
   mapCityOverride = null;
   flightAnimPlaying = false;
@@ -483,11 +584,14 @@ function renderMap(snap) {
     `;
   }
 
-  // Group players by city for stacking offsets (honor flight anim override)
+  // Group players by city (hide flying player so headshot moves with plane)
   const byCity = {};
   snap.players.forEach((p, i) => {
+    if (mapCityOverride && mapCityOverride.playerId === p.id && mapCityOverride.hide) {
+      return; // in the air — drawn by flight animation
+    }
     let cityId = p.city;
-    if (mapCityOverride && mapCityOverride.playerId === p.id) {
+    if (mapCityOverride && mapCityOverride.playerId === p.id && mapCityOverride.city) {
       cityId = mapCityOverride.city;
     }
     if (!byCity[cityId]) byCity[cityId] = [];
@@ -854,14 +958,14 @@ function openModal(title, bodyHtml, onConfirm) {
     try {
       await Promise.resolve(onConfirm());
       closeModal();
-      // If flights were booked, animate before full UI refresh
+      // If flights were booked, animate plane + headshot before full UI refresh
       if (game.flightAnims && game.flightAnims.length) {
-        // Light refresh of side panel without teleporting pawn yet
         const snap = game.snapshot();
         const cur = snap.players[snap.currentPlayerIndex];
-        // Hold flyer at first leg origin
-        const first = game.flightAnims[0];
-        mapCityOverride = { playerId: first.playerId, city: first.from };
+        mapCityOverride = {
+          playerId: game.flightAnims[0].playerId,
+          hide: true,
+        };
         renderPlayersBar(snap);
         renderMap(snap);
         renderHand(cur, snap);
