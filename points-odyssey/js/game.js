@@ -18,6 +18,8 @@ import {
   routeKey,
   getRoute,
   getHotelById,
+  resolveItinerary,
+  listFlightOptions,
 } from './data.js';
 
 function emptyBanks() {
@@ -497,17 +499,31 @@ export class Game {
     return { out, type };
   }
 
-  bookFlight(toCity, airline) {
+  /**
+   * Book a nonstop or one-stop itinerary.
+   * One-stop requires the same airline on both legs (hub connection).
+   * @param {string} toCity
+   * @param {string} airline
+   * @param {string|null} viaCity - connection city, or null for nonstop
+   */
+  bookFlight(toCity, airline, viaCity = null) {
     const p = this.currentPlayer;
     this.requireAction(p);
     const from = p.city;
-    const route = getRoute(from, toCity);
-    if (!route) throw new Error('No direct route from here');
-    if (!route.airlines.includes(airline)) {
-      throw new Error(`${airline} does not fly this route`);
+    if (viaCity === toCity || viaCity === from) {
+      throw new Error('Invalid connection city');
     }
 
-    let cost = Math.floor(route.cost * p.turn.flightMult);
+    const itinerary = resolveItinerary(from, toCity, airline, viaCity || null);
+    if (!itinerary) {
+      throw new Error(
+        viaCity
+          ? `No ${airline} one-stop via ${viaCity} to ${toCity}`
+          : `No direct ${airline} flight to ${toCity}`
+      );
+    }
+
+    let cost = Math.floor(itinerary.baseCost * p.turn.flightMult);
     if (p.character.special === 'cheap_flight' && p.turn.flightsThisTurn === 0) {
       cost = Math.floor(cost * 0.9);
     }
@@ -516,24 +532,40 @@ export class Game {
     }
 
     p.airlines[airline] -= cost;
+
+    // Record every flown leg on personal network + visit cities
+    for (const leg of itinerary.legs) {
+      p.network.add(routeKey(leg.from, leg.to));
+      p.visited.add(leg.to);
+    }
     p.city = toCity;
-    p.visited.add(toCity);
-    p.segments += 1;
+
+    const legCount = itinerary.legs.length;
+    p.segments += legCount;
     if (p.turn.bonusSegment) {
       p.segments += 1;
       p.turn.bonusSegment = false;
     }
     p.turn.flightsThisTurn += 1;
-    p.network.add(routeKey(from, toCity));
     p.turn.actionsLeft -= 1;
 
+    const pathLabel = viaCity
+      ? `${from} → ${viaCity} → ${toCity}`
+      : `${from} → ${toCity}`;
     this.addLog(
-      `${p.name} flies ${from} → ${toCity} on ${airline} for ${cost.toLocaleString()} miles.`
+      `${p.name} flies ${pathLabel} on ${airline} (${legCount} segment${legCount > 1 ? 's' : ''}) for ${cost.toLocaleString()} miles.`
     );
 
     this.checkTripTickets(p);
     this.checkAchievements(p);
-    return { from, to: toCity, cost };
+    return {
+      from,
+      to: toCity,
+      via: viaCity || null,
+      cost,
+      segments: legCount,
+      itinerary,
+    };
   }
 
   /**
@@ -891,4 +923,14 @@ export class Game {
   }
 }
 
-export { CREDIT_CARDS, CHARACTERS, CITIES, ROUTES, TRANSFERS, ACHIEVEMENTS, GAME_CONFIG };
+export {
+  CREDIT_CARDS,
+  CHARACTERS,
+  CITIES,
+  ROUTES,
+  TRANSFERS,
+  ACHIEVEMENTS,
+  GAME_CONFIG,
+  listFlightOptions,
+  resolveItinerary,
+};

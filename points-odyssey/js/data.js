@@ -563,3 +563,91 @@ export function neighbors(city) {
     r.a === city ? r.b : r.a
   );
 }
+
+/**
+ * All bookable itineraries from a city: nonstop + one-stop on the same airline.
+ * One-stop requires both legs share at least one common airline.
+ * @returns {{ key, to, via, baseCost, airlines, stops }[]}
+ */
+export function listFlightOptions(fromCity) {
+  const options = [];
+
+  // Nonstop
+  for (const r of ROUTES) {
+    if (r.a !== fromCity && r.b !== fromCity) continue;
+    const to = r.a === fromCity ? r.b : r.a;
+    options.push({
+      key: `${to}|direct`,
+      to,
+      via: null,
+      baseCost: r.cost,
+      airlines: r.airlines.slice(),
+      stops: 0,
+    });
+  }
+
+  // One stopover, same airline on both legs
+  for (const r1 of ROUTES) {
+    if (r1.a !== fromCity && r1.b !== fromCity) continue;
+    const via = r1.a === fromCity ? r1.b : r1.a;
+    for (const r2 of ROUTES) {
+      if (r2.a !== via && r2.b !== via) continue;
+      const to = r2.a === via ? r2.b : r2.a;
+      if (to === fromCity || to === via) continue;
+      const common = r1.airlines.filter((a) => r2.airlines.indexOf(a) !== -1);
+      if (!common.length) continue;
+      options.push({
+        key: `${to}|via|${via}`,
+        to,
+        via,
+        baseCost: r1.cost + r2.cost,
+        airlines: common,
+        stops: 1,
+      });
+    }
+  }
+
+  options.sort((a, b) => {
+    if (a.stops !== b.stops) return a.stops - b.stops;
+    if (a.to !== b.to) return a.to.localeCompare(b.to);
+    if ((a.via || '') !== (b.via || '')) {
+      return (a.via || '').localeCompare(b.via || '');
+    }
+    return a.baseCost - b.baseCost;
+  });
+
+  return options;
+}
+
+/** Resolve a specific itinerary; returns legs + total cost or null */
+export function resolveItinerary(from, to, airline, via) {
+  if (!via) {
+    const route = getRoute(from, to);
+    if (!route || route.airlines.indexOf(airline) === -1) return null;
+    return {
+      from,
+      to,
+      via: null,
+      stops: 0,
+      baseCost: route.cost,
+      legs: [{ from, to, cost: route.cost }],
+    };
+  }
+  const r1 = getRoute(from, via);
+  const r2 = getRoute(via, to);
+  if (!r1 || !r2) return null;
+  if (r1.airlines.indexOf(airline) === -1 || r2.airlines.indexOf(airline) === -1) {
+    return null;
+  }
+  return {
+    from,
+    to,
+    via,
+    stops: 1,
+    baseCost: r1.cost + r2.cost,
+    legs: [
+      { from, to: via, cost: r1.cost },
+      { from: via, to, cost: r2.cost },
+    ],
+  };
+}

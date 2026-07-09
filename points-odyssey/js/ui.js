@@ -2,7 +2,17 @@
  * Points Odyssey — UI controller
  */
 
-import { Game, CREDIT_CARDS, CHARACTERS, CITIES, ROUTES, TRANSFERS, ACHIEVEMENTS, GAME_CONFIG } from './game.js';
+import {
+  Game,
+  CREDIT_CARDS,
+  CHARACTERS,
+  CITIES,
+  ROUTES,
+  TRANSFERS,
+  ACHIEVEMENTS,
+  GAME_CONFIG,
+  listFlightOptions,
+} from './game.js';
 import { BANKS, HOTELS, AIRLINES, getRoute } from './data.js';
 
 const game = new Game();
@@ -621,21 +631,36 @@ function openTransferModal() {
 function openFlightModal() {
   const p = game.currentPlayer;
   const from = p.city;
-  const options = ROUTES.filter((r) => r.a === from || r.b === from);
+  const options = listFlightOptions(from);
+  const flightMult = (p.turn && p.turn.flightMult) || 1;
+  const flightsThisTurn = (p.turn && p.turn.flightsThisTurn) || 0;
 
   openModal(
     `Book flight from ${from}`,
     `
+      <p class="muted">Nonstop or <strong>1 stop</strong> on the <strong>same airline</strong>. One-stop tickets cost both legs and count as 2 segments (1 action).</p>
       <div class="flight-list">
         ${options
-          .map((r) => {
-            const dest = r.a === from ? r.b : r.a;
+          .map((opt, idx) => {
+            const destName = CITIES[opt.to] ? CITIES[opt.to].name : opt.to;
+            const path = opt.via
+              ? `${from} → ${opt.via} → ${opt.to}`
+              : `${from} → ${opt.to}`;
+            const stopLabel = opt.stops === 0 ? 'Nonstop' : `1 stop via ${opt.via}`;
+            const airLabels = opt.airlines
+              .map((a) => (AIRLINES[a] ? AIRLINES[a].short : a))
+              .join('/');
             return `
               <label class="card-option">
-                <input type="radio" name="flight" value="${dest}" data-airlines='${JSON.stringify(r.airlines)}' data-cost="${r.cost}" />
+                <input type="radio" name="flight" value="${idx}"
+                  data-to="${opt.to}"
+                  data-via="${opt.via || ''}"
+                  data-airlines='${JSON.stringify(opt.airlines)}'
+                  data-cost="${opt.baseCost}"
+                  data-stops="${opt.stops}" />
                 <div>
-                  <strong>${from} → ${dest}</strong> (${CITIES[dest].name})
-                  <p>Airlines: ${r.airlines.map((a) => AIRLINES[a].name).join(', ')} · base ${fmt(r.cost)} mi</p>
+                  <strong>${path}</strong> (${destName})
+                  <p>${stopLabel} · ${airLabels} · base ${fmt(opt.baseCost)} mi${opt.stops ? ' · 2 segments' : ''}</p>
                 </div>
               </label>
             `;
@@ -649,10 +674,17 @@ function openFlightModal() {
     `,
     () => {
       const sel = $('#modal-body input[name=flight]:checked');
-      if (!sel) throw new Error('Select a destination');
+      if (!sel) throw new Error('Select a flight');
       const airline = $('#flight-airline').value;
-      game.bookFlight(sel.value, airline);
-      toast(`Landed in ${sel.value}!`);
+      if (!airline) throw new Error('Select an airline');
+      const to = sel.dataset.to;
+      const via = sel.dataset.via || null;
+      const res = game.bookFlight(to, airline, via);
+      toast(
+        res.via
+          ? `Landed in ${res.to} via ${res.via} (+${res.segments} segments)`
+          : `Landed in ${res.to}!`
+      );
     }
   );
 
@@ -660,24 +692,25 @@ function openFlightModal() {
     const sel = $('#modal-body input[name=flight]:checked');
     if (!sel) return;
     const airlines = JSON.parse(sel.dataset.airlines);
-    let cost = Math.floor(+sel.dataset.cost * (p.turn?.flightMult || 1));
-    if (p.character.special === 'cheap_flight' && (p.turn?.flightsThisTurn || 0) === 0) {
+    let cost = Math.floor(+sel.dataset.cost * flightMult);
+    if (p.character.special === 'cheap_flight' && flightsThisTurn === 0) {
       cost = Math.floor(cost * 0.9);
     }
+    const segs = +sel.dataset.stops === 1 ? 2 : 1;
     $('#flight-airline').innerHTML = airlines
       .map((a) => {
         const bal = p.airlines[a] || 0;
         const ok = bal >= cost;
-        return `<option value="${a}" ${ok ? '' : 'disabled'}>${AIRLINES[a].name} (${fmt(bal)} mi)${ok ? '' : ' — short'}</option>`;
+        const name = AIRLINES[a] ? AIRLINES[a].name : a;
+        return `<option value="${a}" ${ok ? '' : 'disabled'}>${name} (${fmt(bal)} mi)${ok ? '' : ' — short'}</option>`;
       })
       .join('');
-    $('#flight-cost').textContent = `Cost this turn: ${fmt(cost)} miles`;
+    $('#flight-cost').textContent = `Cost this turn: ${fmt(cost)} miles · ${segs} segment${segs > 1 ? 's' : ''} · 1 action`;
   };
 
   $$('#modal-body input[name=flight]').forEach((r) => {
     r.onchange = syncAirlines;
   });
-  // select first
   const first = $('#modal-body input[name=flight]');
   if (first) {
     first.checked = true;

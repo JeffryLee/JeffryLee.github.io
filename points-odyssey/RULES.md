@@ -175,7 +175,7 @@ Pick any two (same action twice only if marked **repeatable**):
 |--------|--------|
 | **Apply for Card** | Gain one new credit card (if under limit). Claim signup bonus after min-spend (often completed same turn if spend is high). |
 | **Transfer Points** | Move bank points → hotel or airline partner at listed ratio. Apply active transfer bonuses. *(repeatable)* |
-| **Book Flight** | Pay airline miles for a route connected to your current city (or any owned segment chain). Move your pawn to destination. +1 **segment**. May complete trip tickets. *(repeatable)* |
+| **Book Flight** | Pay airline miles for a **nonstop** route, or a **one-stop** itinerary on the **same airline** (both legs). Cost = sum of leg costs. Nonstop = 1 segment; one-stop = 2 segments; still **1 action**. Connection city is visited. May complete trip tickets. *(repeatable)* |
 | **Book Hotel** | Stay **1 night** at one **signature hotel** in your current city. Pay that property’s brand points; score its VP. Each property only once per game. *(repeatable for different hotels)* |
 | **Draw Trip Tickets** | Draw 2 tickets, keep ≥1 (discard others). |
 | **Rest / Plan** | Gain +500 of any one bank currency you already earn (or +1 temporary action token next turn — digital: +1,000 flexible bank points to your strongest bank). |
