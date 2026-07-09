@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Points Odyssey — Credit Card Points Board Game</title>
+    <meta
+      name="description"
+      content="A Eurogame of US travel with Chase, Amex, Citi, and Bilt points. Transfer, fly, stay, complete trip tickets."
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="icon" href="assets/logo.jpg" />
+  </head>
+  <body>
+    <!-- SETUP -->
+    <section id="screen-setup" class="screen active">
+      <div class="setup-wrap">
+        <div class="hero">
+          <img class="logo" src="assets/logo.jpg" alt="Points Odyssey logo" />
+          <div>
+            <h1>Points Odyssey</h1>
+            <p class="lead">
+              A Eurogame of credit-card points, hotel free nights, and domestic
+              award travel. Race across the US with Chase, Amex, Citi &amp; Bilt
+              — transfer partners, trip tickets, and random events every turn.
+            </p>
+            <div class="hero-actions">
+              <button type="button" class="btn" id="btn-show-rules">
+                Read Rules
+              </button>
+              <button type="button" class="btn" id="btn-quick-demo">
+                Quick Demo (3 players)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setup-grid">
+          <div>
+            <h2 style="color: var(--gold-soft); margin-top: 0">
+              Choose characters (3–6 players)
+            </h2>
+            <p class="muted">
+              Click a traveler to add them to the lobby. Each has a unique
+              spending structure that shapes which cards and banks shine.
+            </p>
+            <div id="character-grid"></div>
+          </div>
+          <aside class="lobby-panel">
+            <h2>Lobby</h2>
+            <ul id="lobby-list"></ul>
+            <button type="button" class="btn primary" id="start-game" disabled>
+              Start Game
+            </button>
+            <p class="muted" style="margin-top: 0.75rem">
+              Hotseat: pass one device around the table. Full rules in
+              <code>RULES.md</code>.
+            </p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- RULES (inline summary) -->
+    <section id="screen-rules" class="screen">
+      <div class="rules-wrap">
+        <button type="button" class="btn" id="btn-back-setup">← Back</button>
+        <h1>How to Play</h1>
+        <p>
+          <strong>Goal:</strong> Highest Victory Points (VP) after 10 rounds.
+          Earn bank points from spend, transfer to hotels/airlines, book award
+          travel, complete trip tickets, unlock achievements.
+        </p>
+
+        <h2>Each turn</h2>
+        <ol>
+          <li>
+            <strong>Event</strong> — draw one random event (transfer bonus,
+            steal, flash sale…).
+          </li>
+          <li>
+            <strong>Income</strong> — spend $2,000 budget (auto or custom);
+            character multipliers + credit cards earn bank points.
+          </li>
+          <li>
+            <strong>Actions (2)</strong> — apply for a card, transfer points,
+            book a flight, book a hotel, draw trip tickets, or rest (+1,000
+            points).
+          </li>
+          <li><strong>End turn</strong> — next player.</li>
+        </ol>
+
+        <h2>Banks &amp; transfer partners (simplified)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Bank</th>
+              <th>Airlines</th>
+              <th>Hotels</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Chase</td>
+              <td>United 1:1</td>
+              <td>Hyatt 1:1, Marriott 1:1</td>
+            </tr>
+            <tr>
+              <td>Amex</td>
+              <td>Delta 1:1</td>
+              <td>Hilton 1:2, Marriott 1:1</td>
+            </tr>
+            <tr>
+              <td>Citi</td>
+              <td>American 1:1</td>
+              <td>Hilton 1:1</td>
+            </tr>
+            <tr>
+              <td>Bilt</td>
+              <td>United, American 1:1</td>
+              <td>Hyatt, Marriott 1:1</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Trip tickets</h2>
+        <p>
+          Like Ticket to Ride: complete origin→destination using your personal
+          flight network for VP. Incomplete tickets at game end cost the penalty.
+        </p>
+
+        <h2>Achievements</h2>
+        <p>
+          Million Miler (12 segments), 60-Night Legend (15 nights), Hub Master,
+          Polyglot Points (5k in all four banks), Coast to Coast, and more.
+        </p>
+
+        <h2>Airlines &amp; hubs (flavor)</h2>
+        <ul>
+          <li><strong>United</strong> — ORD, DEN, IAH, SFO, NYC…</li>
+          <li><strong>Delta</strong> — ATL fortress, MSP, SEA…</li>
+          <li><strong>American</strong> — DFW fortress, MIA, PHX…</li>
+        </ul>
+
+        <p class="muted">
+          Full design document:
+          <a href="RULES.md" style="color: var(--gold)">RULES.md</a>. Not
+          affiliated with any bank, hotel, or airline.
+        </p>
+
+        <button type="button" class="btn" id="btn-back-game">← Back</button>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section id="screen-game" class="screen">
+      <header class="game-header">
+        <div class="brand">
+          <img src="assets/logo.jpg" alt="" />
+          Points Odyssey
+        </div>
+        <div class="meta-tags">
+          <span class="tag gold" id="round-label">Round 1 / 10</span>
+          <span class="tag" id="turn-label">—</span>
+          <span class="tag" id="actions-left">2 actions</span>
+        </div>
+        <div id="players-bar"></div>
+        <button type="button" class="btn" id="btn-how-to">Rules</button>
+      </header>
+
+      <div class="game-body">
+        <div class="map-panel">
+          <div class="legend">
+            <span class="ua">United routes</span>
+            <span class="dl">Delta routes</span>
+            <span class="aa">American routes</span>
+            <span>Solid = your flown segments</span>
+          </div>
+          <svg id="map-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div id="city-info"></div>
+        </div>
+
+        <aside class="side-panel">
+          <h3>Event</h3>
+          <div id="event-display"></div>
+
+          <h3>Bank points</h3>
+          <div class="bal-row" id="bank-balances"></div>
+
+          <h3>Hotel points</h3>
+          <div class="bal-row" id="hotel-balances"></div>
+
+          <h3>Airline miles</h3>
+          <div class="bal-row" id="airline-balances"></div>
+
+          <h3>Credit cards</h3>
+          <div id="my-cards"></div>
+
+          <h3>Trip tickets</h3>
+          <div id="my-tickets"></div>
+
+          <h3>Stats</h3>
+          <div id="my-stats"></div>
+
+          <h3>Achievements</h3>
+          <div id="my-achievements"></div>
+
+          <div id="phase-panel"></div>
+
+          <h3>Log</h3>
+          <div id="game-log"></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- GAME OVER -->
+    <section id="screen-gameover" class="screen">
+      <div class="gameover-wrap">
+        <img
+          src="assets/logo.jpg"
+          alt=""
+          style="width: 100px; border-radius: 16px; border: 2px solid var(--gold)"
+        />
+        <h1>Final Scoring</h1>
+        <p id="winner-banner"></p>
+        <div id="final-table"></div>
+        <button type="button" class="btn primary" id="btn-new-game">
+          New Game
+        </button>
+      </div>
+    </section>
+
+    <!-- Modal -->
+    <div id="modal-overlay">
+      <div class="modal">
+        <h2 id="modal-title">Action</h2>
+        <div id="modal-body"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn" id="modal-cancel">Cancel</button>
+          <button type="button" class="btn primary" id="modal-confirm">
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script type="module" src="js/ui.js"></script>
+  </body>
+</html>
