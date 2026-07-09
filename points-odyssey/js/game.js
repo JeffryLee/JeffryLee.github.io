@@ -17,6 +17,7 @@ import {
   shuffle,
   routeKey,
   getRoute,
+  getHotelById,
 } from './data.js';
 
 function emptyBanks() {
@@ -48,6 +49,7 @@ function createPlayer(index, character, name) {
     segments: 0,
     nights: 0,
     nightsByBrand: { marriott: 0, hilton: 0, hyatt: 0 },
+    stayedHotels: new Set(), // property ids — one stay (1 night) each per game
     transfersDone: 0,
     vp: 0,
     achievements: new Set(),
@@ -534,38 +536,48 @@ export class Game {
     return { from, to: toCity, cost };
   }
 
-  bookHotel(brand, nights) {
+  /**
+   * Book one night at a signature hotel property.
+   * Rule: each property may be stayed at only once per player per game (exactly 1 night).
+   * @param {string} hotelId - property id e.g. 'nyc-ritz' / 'nyc-marriott'
+   */
+  bookHotel(hotelId) {
     const p = this.currentPlayer;
     this.requireAction(p);
-    nights = Math.min(
-      Math.max(1, Math.floor(nights)),
-      GAME_CONFIG.maxNightsPerBooking
-    );
     const city = CITIES[p.city];
-    if (!city.hotels[brand]) {
-      throw new Error(`${brand} not available in ${city.name}`);
+    const hotel = (city.hotels || []).find((h) => h.id === hotelId);
+    if (!hotel) {
+      throw new Error('That hotel is not in your current city');
+    }
+    if (p.stayedHotels.has(hotelId)) {
+      throw new Error(
+        `Already stayed at ${hotel.name} this game (1 night max per hotel)`
+      );
     }
 
-    let costPer = Math.floor(city.hotels[brand] * p.turn.hotelMult);
-    let totalCost = costPer * nights;
+    const brand = hotel.brand;
+    let totalCost = Math.floor(hotel.cost * p.turn.hotelMult);
+    const nights = 1;
 
     if (p.turn.freeNightAvailable) {
-      // free 1 night
-      totalCost = costPer * Math.max(0, nights - 1);
+      totalCost = 0;
       p.turn.freeNightAvailable = false;
-      this.addLog(`${p.name} uses Free Night Certificate.`);
+      this.addLog(`${p.name} uses Free Night Certificate at ${hotel.name}.`);
     }
 
     if ((p.hotels[brand] || 0) < totalCost) {
-      throw new Error(`Need ${totalCost.toLocaleString()} ${brand} points`);
+      throw new Error(
+        `Need ${totalCost.toLocaleString()} ${brand} points for ${hotel.name}`
+      );
     }
 
     p.hotels[brand] -= totalCost;
     p.nights += nights;
     p.nightsByBrand[brand] = (p.nightsByBrand[brand] || 0) + nights;
+    p.stayedHotels.add(hotelId);
 
-    let stayVp = (city.hotelVp[brand] || 2) * nights;
-    if (p.character.special === 'family_nights' && nights >= 2) {
+    let stayVp = hotel.vp || 2;
+    if (p.character.special === 'family_nights') {
       stayVp += 1;
     }
     stayVp += p.turn.hotelVpBonus;
@@ -574,10 +586,10 @@ export class Game {
     p.turn.actionsLeft -= 1;
 
     this.addLog(
-      `${p.name} stays ${nights}n ${brand} in ${city.name} (−${totalCost.toLocaleString()} pts, +${stayVp} VP).`
+      `${p.name} stays 1n at ${hotel.name} (${city.name}) −${totalCost.toLocaleString()} ${brand} pts, +${stayVp} VP.`
     );
     this.checkAchievements(p);
-    return { nights, totalCost, stayVp };
+    return { hotel, nights, totalCost, stayVp, brand };
   }
 
   drawTickets() {
@@ -857,6 +869,7 @@ export class Game {
         segments: p.segments,
         nights: p.nights,
         nightsByBrand: { ...p.nightsByBrand },
+        stayedHotels: [...p.stayedHotels],
         transfersDone: p.transfersDone,
         vp: p.vp,
         achievements: [...p.achievements],

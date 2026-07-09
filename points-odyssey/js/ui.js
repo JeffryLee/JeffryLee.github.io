@@ -222,16 +222,18 @@ function renderMap(snap) {
 function showCityInfo(cityId, cur) {
   const city = CITIES[cityId];
   const routes = ROUTES.filter((r) => r.a === cityId || r.b === cityId);
+  const stayed = new Set(cur.stayedHotels || []);
   const panel = $('#city-info');
   panel.innerHTML = `
     <h3>${city.name} (${city.id})</h3>
-    <p><strong>Hotels:</strong></p>
+    <p><strong>Signature hotels</strong> <span class="muted">(1 night each, once per game)</span>:</p>
     <ul>
-      ${Object.entries(city.hotels)
-        .map(
-          ([b, cost]) =>
-            `<li>${HOTELS[b]?.name || b}: ${fmt(cost)}/night · ${city.hotelVp[b]} VP</li>`
-        )
+      ${(city.hotels || [])
+        .map((h) => {
+          const brand = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
+          const done = stayed.has(h.id) ? ' ✓ stayed' : '';
+          return `<li><strong>${h.name}</strong><br/><span class="muted">${brand} · ${fmt(h.cost)} pts · ${h.vp} VP${done}</span></li>`;
+        })
         .join('')}
     </ul>
     <p><strong>Routes from here:</strong></p>
@@ -686,39 +688,44 @@ function openFlightModal() {
 function openHotelModal() {
   const p = game.currentPlayer;
   const city = CITIES[p.city];
-  const brands = Object.keys(city.hotels);
+  const hotels = city.hotels || [];
+  const hotelMult = (p.turn && p.turn.hotelMult) || 1;
+  const freeNight = p.turn && p.turn.freeNightAvailable;
 
   openModal(
-    `Book hotel in ${city.name}`,
+    `Book 1 night in ${city.name}`,
     `
+      <p class="muted">Each signature hotel can be stayed at <strong>once per game</strong> (1 night only).</p>
       <div class="flight-list">
-        ${brands
-          .map((b) => {
-            let cost = Math.floor(city.hotels[b] * (p.turn?.hotelMult || 1));
-            const bal = p.hotels[b] || 0;
+        ${hotels
+          .map((h) => {
+            const cost = Math.floor(h.cost * hotelMult);
+            const bal = p.hotels[h.brand] || 0;
+            const already = p.stayedHotels.has(h.id);
+            const brandName = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
+            const canPay = freeNight || bal >= cost;
             return `
-              <label class="card-option">
-                <input type="radio" name="hotel" value="${b}" data-cost="${cost}" />
+              <label class="card-option ${already ? 'disabled-opt' : ''}">
+                <input type="radio" name="hotel" value="${h.id}"
+                  ${already || !canPay ? 'disabled' : ''} />
                 <div>
-                  <strong>${HOTELS[b].name}</strong>
-                  <p>${fmt(cost)}/night · ${city.hotelVp[b]} VP/night · you have ${fmt(bal)}</p>
+                  <strong>${h.name}</strong>
+                  <span class="bank-tag" style="background:${HOTELS[h.brand] ? HOTELS[h.brand].color : '#666'}">${brandName}</span>
+                  <p>${fmt(cost)} pts · ${h.vp} VP · balance ${fmt(bal)} ${brandName}
+                    ${already ? ' · <em>already stayed</em>' : !canPay ? ' · <em>short on points</em>' : ''}</p>
                 </div>
               </label>
             `;
           })
           .join('')}
       </div>
-      <label class="field">Nights (1–3)
-        <input type="number" id="hotel-nights" min="1" max="3" value="1" />
-      </label>
-      ${p.turn?.freeNightAvailable ? '<p class="bonus-tag">Free Night Certificate active!</p>' : ''}
+      ${freeNight ? '<p class="bonus-tag">Free Night Certificate active — stay is free!</p>' : ''}
     `,
     () => {
       const sel = $('#modal-body input[name=hotel]:checked');
-      if (!sel) throw new Error('Select a hotel brand');
-      const nights = +$('#hotel-nights').value || 1;
-      const res = game.bookHotel(sel.value, nights);
-      toast(`+${res.stayVp} VP from stay`);
+      if (!sel) throw new Error('Select a hotel');
+      const res = game.bookHotel(sel.value);
+      toast(`Stayed at ${res.hotel.name} · +${res.stayVp} VP`);
     }
   );
 }

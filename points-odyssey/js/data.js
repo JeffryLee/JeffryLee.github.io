@@ -11,7 +11,7 @@ export const GAME_CONFIG = {
   defaultCardLimit: 3,
   executiveCardLimit: 4,
   maxTripTickets: 5,
-  maxNightsPerBooking: 3,
+  maxNightsPerBooking: 1, // one night per stay; each property once per game
   startingTickets: 3,
   keepTickets: 2,
 };
@@ -92,7 +92,7 @@ export const CHARACTERS = [
     homeCity: 'ORD',
     cardLimitBonus: 0,
     special: 'family_nights',
-    specialDesc: '+1 VP when booking 2+ hotel nights.',
+    specialDesc: '+1 bonus VP on every hotel stay.',
   },
   {
     id: 'nomad',
@@ -256,25 +256,143 @@ export const CREDIT_CARDS = [
   },
 ];
 
-/** City positions as % of map container (approx US geography) */
+/**
+ * City positions as % of map container (approx US geography).
+ * hotels[] = signature properties: one stay (1 night) per property per player per game.
+ * brand still drives which hotel points currency pays for the stay.
+ */
 export const CITIES = {
-  SEA: { id: 'SEA', name: 'Seattle', x: 12, y: 12, region: 'nw', hotels: { marriott: 20000, hilton: 30000, hyatt: 12000 }, hotelVp: { marriott: 3, hilton: 2, hyatt: 4 } },
-  SFO: { id: 'SFO', name: 'San Francisco', x: 8, y: 42, region: 'west', hotels: { marriott: 35000, hyatt: 18000 }, hotelVp: { marriott: 4, hyatt: 5 } },
-  LAX: { id: 'LAX', name: 'Los Angeles', x: 12, y: 58, region: 'west', hotels: { marriott: 30000, hilton: 40000, hyatt: 15000 }, hotelVp: { marriott: 3, hilton: 3, hyatt: 4 } },
-  LAS: { id: 'LAS', name: 'Las Vegas', x: 18, y: 48, region: 'sw', hotels: { marriott: 25000, hilton: 35000, hyatt: 20000 }, hotelVp: { marriott: 4, hilton: 4, hyatt: 6 } },
-  PHX: { id: 'PHX', name: 'Phoenix', x: 22, y: 58, region: 'sw', hotels: { marriott: 18000, hilton: 28000 }, hotelVp: { marriott: 2, hilton: 2 } },
-  DEN: { id: 'DEN', name: 'Denver', x: 35, y: 38, region: 'mt', hotels: { marriott: 22000, hilton: 32000, hyatt: 14000 }, hotelVp: { marriott: 3, hilton: 2, hyatt: 4 } },
-  DFW: { id: 'DFW', name: 'Dallas', x: 48, y: 58, region: 'south', hotels: { marriott: 20000, hilton: 30000, hyatt: 12000 }, hotelVp: { marriott: 2, hilton: 2, hyatt: 3 } },
-  IAH: { id: 'IAH', name: 'Houston', x: 50, y: 68, region: 'south', hotels: { marriott: 18000, hilton: 28000 }, hotelVp: { marriott: 2, hilton: 2 } },
-  MSP: { id: 'MSP', name: 'Minneapolis', x: 52, y: 22, region: 'mw', hotels: { marriott: 18000, hilton: 25000 }, hotelVp: { marriott: 2, hilton: 2 } },
-  ORD: { id: 'ORD', name: 'Chicago', x: 58, y: 32, region: 'mw', hotels: { marriott: 28000, hilton: 38000, hyatt: 15000 }, hotelVp: { marriott: 3, hilton: 3, hyatt: 4 } },
-  ATL: { id: 'ATL', name: 'Atlanta', x: 68, y: 58, region: 'se', hotels: { marriott: 22000, hilton: 32000 }, hotelVp: { marriott: 3, hilton: 2 } },
-  MSY: { id: 'MSY', name: 'New Orleans', x: 58, y: 72, region: 'south', hotels: { marriott: 20000, hilton: 30000 }, hotelVp: { marriott: 3, hilton: 3 } },
-  MIA: { id: 'MIA', name: 'Miami', x: 78, y: 82, region: 'se', hotels: { marriott: 35000, hilton: 45000, hyatt: 18000 }, hotelVp: { marriott: 5, hilton: 4, hyatt: 5 } },
-  WAS: { id: 'WAS', name: 'Washington DC', x: 80, y: 40, region: 'ne', hotels: { marriott: 28000, hilton: 38000, hyatt: 15000 }, hotelVp: { marriott: 3, hilton: 3, hyatt: 4 } },
-  NYC: { id: 'NYC', name: 'New York', x: 86, y: 32, region: 'ne', hotels: { marriott: 40000, hilton: 55000, hyatt: 22000 }, hotelVp: { marriott: 5, hilton: 4, hyatt: 6 } },
-  BOS: { id: 'BOS', name: 'Boston', x: 90, y: 24, region: 'ne', hotels: { marriott: 30000, hilton: 40000 }, hotelVp: { marriott: 3, hilton: 3 } },
+  SEA: {
+    id: 'SEA', name: 'Seattle', x: 12, y: 12, region: 'nw',
+    hotels: [
+      { id: 'sea-marriott', name: 'Seattle Marriott Waterfront', brand: 'marriott', cost: 20000, vp: 3 },
+      { id: 'sea-hilton', name: 'Hilton Seattle', brand: 'hilton', cost: 30000, vp: 2 },
+      { id: 'sea-hyatt', name: 'Hyatt at Olive 8', brand: 'hyatt', cost: 12000, vp: 4 },
+    ],
+  },
+  SFO: {
+    id: 'SFO', name: 'San Francisco', x: 8, y: 42, region: 'west',
+    hotels: [
+      { id: 'sfo-marriott', name: 'San Francisco Marriott Marquis', brand: 'marriott', cost: 35000, vp: 4 },
+      { id: 'sfo-hyatt', name: 'Hyatt Regency San Francisco', brand: 'hyatt', cost: 18000, vp: 5 },
+    ],
+  },
+  LAX: {
+    id: 'LAX', name: 'Los Angeles', x: 12, y: 58, region: 'west',
+    hotels: [
+      { id: 'lax-marriott', name: 'JW Marriott Los Angeles L.A. LIVE', brand: 'marriott', cost: 30000, vp: 3 },
+      { id: 'lax-hilton', name: 'Hilton Los Angeles Airport', brand: 'hilton', cost: 40000, vp: 3 },
+      { id: 'lax-hyatt', name: 'Park Hyatt Los Angeles', brand: 'hyatt', cost: 15000, vp: 4 },
+    ],
+  },
+  LAS: {
+    id: 'LAS', name: 'Las Vegas', x: 18, y: 48, region: 'sw',
+    hotels: [
+      { id: 'las-marriott', name: 'JW Marriott Las Vegas Resort & Spa', brand: 'marriott', cost: 25000, vp: 4 },
+      { id: 'las-hilton', name: 'Waldorf Astoria Las Vegas', brand: 'hilton', cost: 35000, vp: 5 },
+      { id: 'las-hyatt', name: 'Grand Hyatt at Resorts World Las Vegas', brand: 'hyatt', cost: 20000, vp: 6 },
+    ],
+  },
+  PHX: {
+    id: 'PHX', name: 'Phoenix', x: 22, y: 58, region: 'sw',
+    hotels: [
+      { id: 'phx-marriott', name: 'The Phoenician, a Luxury Collection Resort', brand: 'marriott', cost: 28000, vp: 4 },
+      { id: 'phx-hilton', name: 'Arizona Biltmore, a Waldorf Astoria Resort', brand: 'hilton', cost: 32000, vp: 4 },
+    ],
+  },
+  DEN: {
+    id: 'DEN', name: 'Denver', x: 35, y: 38, region: 'mt',
+    hotels: [
+      { id: 'den-marriott', name: 'Denver Marriott City Center', brand: 'marriott', cost: 22000, vp: 3 },
+      { id: 'den-hilton', name: 'Hilton Denver City Center', brand: 'hilton', cost: 32000, vp: 2 },
+      { id: 'den-hyatt', name: 'Grand Hyatt Denver', brand: 'hyatt', cost: 14000, vp: 4 },
+    ],
+  },
+  DFW: {
+    id: 'DFW', name: 'Dallas', x: 48, y: 58, region: 'south',
+    hotels: [
+      { id: 'dfw-marriott', name: 'The Joule, Dallas (Marriott Autograph)', brand: 'marriott', cost: 22000, vp: 3 },
+      { id: 'dfw-hilton', name: 'Hilton Anatole', brand: 'hilton', cost: 30000, vp: 2 },
+      { id: 'dfw-hyatt', name: 'Hyatt Regency Dallas', brand: 'hyatt', cost: 12000, vp: 3 },
+    ],
+  },
+  IAH: {
+    id: 'IAH', name: 'Houston', x: 50, y: 68, region: 'south',
+    hotels: [
+      { id: 'iah-marriott', name: 'Houston Marriott Marquis', brand: 'marriott', cost: 18000, vp: 2 },
+      { id: 'iah-hilton', name: 'Hilton Americas-Houston', brand: 'hilton', cost: 28000, vp: 2 },
+    ],
+  },
+  MSP: {
+    id: 'MSP', name: 'Minneapolis', x: 52, y: 22, region: 'mw',
+    hotels: [
+      { id: 'msp-marriott', name: 'Minneapolis Marriott City Center', brand: 'marriott', cost: 18000, vp: 2 },
+      { id: 'msp-hilton', name: 'Hilton Minneapolis', brand: 'hilton', cost: 25000, vp: 2 },
+    ],
+  },
+  ORD: {
+    id: 'ORD', name: 'Chicago', x: 58, y: 32, region: 'mw',
+    hotels: [
+      { id: 'ord-marriott', name: 'Chicago Marriott Downtown Magnificent Mile', brand: 'marriott', cost: 28000, vp: 3 },
+      { id: 'ord-hilton', name: 'The Hilton Chicago', brand: 'hilton', cost: 38000, vp: 3 },
+      { id: 'ord-hyatt', name: 'Park Hyatt Chicago', brand: 'hyatt', cost: 15000, vp: 4 },
+    ],
+  },
+  ATL: {
+    id: 'ATL', name: 'Atlanta', x: 68, y: 58, region: 'se',
+    hotels: [
+      { id: 'atl-marriott', name: 'Atlanta Marriott Marquis', brand: 'marriott', cost: 22000, vp: 3 },
+      { id: 'atl-hilton', name: 'Hilton Atlanta', brand: 'hilton', cost: 32000, vp: 2 },
+    ],
+  },
+  MSY: {
+    id: 'MSY', name: 'New Orleans', x: 58, y: 72, region: 'south',
+    hotels: [
+      { id: 'msy-marriott', name: 'New Orleans Marriott', brand: 'marriott', cost: 20000, vp: 3 },
+      { id: 'msy-hilton', name: 'Hilton New Orleans Riverside', brand: 'hilton', cost: 30000, vp: 3 },
+    ],
+  },
+  MIA: {
+    id: 'MIA', name: 'Miami', x: 78, y: 82, region: 'se',
+    hotels: [
+      { id: 'mia-marriott', name: 'JW Marriott Miami Turnberry Resort & Spa', brand: 'marriott', cost: 35000, vp: 5 },
+      { id: 'mia-hilton', name: 'Fontainebleau Miami Beach (Hilton Honors)', brand: 'hilton', cost: 45000, vp: 5 },
+      { id: 'mia-hyatt', name: 'Hyatt Regency Miami', brand: 'hyatt', cost: 18000, vp: 5 },
+    ],
+  },
+  WAS: {
+    id: 'WAS', name: 'Washington DC', x: 80, y: 40, region: 'ne',
+    hotels: [
+      { id: 'was-marriott', name: 'JW Marriott Washington, DC', brand: 'marriott', cost: 28000, vp: 3 },
+      { id: 'was-hilton', name: 'Capital Hilton', brand: 'hilton', cost: 38000, vp: 3 },
+      { id: 'was-hyatt', name: 'Park Hyatt Washington, D.C.', brand: 'hyatt', cost: 15000, vp: 4 },
+    ],
+  },
+  NYC: {
+    id: 'NYC', name: 'New York', x: 86, y: 32, region: 'ne',
+    hotels: [
+      { id: 'nyc-marriott', name: 'The Ritz-Carlton New York, Central Park', brand: 'marriott', cost: 45000, vp: 6 },
+      { id: 'nyc-hilton', name: 'Waldorf Astoria New York', brand: 'hilton', cost: 55000, vp: 5 },
+      { id: 'nyc-hyatt', name: 'Park Hyatt New York', brand: 'hyatt', cost: 25000, vp: 6 },
+    ],
+  },
+  BOS: {
+    id: 'BOS', name: 'Boston', x: 90, y: 24, region: 'ne',
+    hotels: [
+      { id: 'bos-marriott', name: 'Boston Marriott Copley Place', brand: 'marriott', cost: 30000, vp: 3 },
+      { id: 'bos-hilton', name: 'Hilton Boston Park Plaza', brand: 'hilton', cost: 40000, vp: 3 },
+    ],
+  },
 };
+
+/** Look up a signature hotel by id across all cities */
+export function getHotelById(hotelId) {
+  for (const city of Object.values(CITIES)) {
+    const h = (city.hotels || []).find((x) => x.id === hotelId);
+    if (h) return { hotel: h, city };
+  }
+  return null;
+}
 
 /**
  * Routes: undirected edges between cities.
@@ -382,7 +500,7 @@ export const EVENTS = [
   { id: 'flash_sale', name: 'Flash Sale', desc: 'Hotel nights cost 30% fewer points this turn.', type: 'hotel_discount', mult: 0.7 },
   { id: 'deval', name: 'Soft Devaluation', desc: 'Your hotel stays cost +20% this turn.', type: 'hotel_discount', mult: 1.2 },
   { id: 'signup_boost', name: 'Amex Offer Stack', desc: 'Gain 5,000 bank points in a bank you already use (or Chase).', type: 'gain_bank', amount: 5000 },
-  { id: 'free_night', name: 'Free Night Certificate', desc: 'Book 1 hotel night for free in your current city (best available brand).', type: 'free_night' },
+  { id: 'free_night', name: 'Free Night Certificate', desc: 'Your next signature-hotel stay this turn costs 0 points (still 1 night, once per property).', type: 'free_night' },
   { id: 'miles_sale', name: 'Mileage Sale', desc: 'Gain 8,000 miles in an airline you already hold (or United).', type: 'gain_airline', amount: 8000 },
   { id: '// delayed', name: 'Weather Delay', desc: 'Skip one action this turn (only 1 action).', type: 'lose_action' },
   { id: 'portal_bonus', name: 'Portal Booking Bonus', desc: 'Travel spend earns 3× this turn.', type: 'earn_mult', category: 'travel', mult: 3 },

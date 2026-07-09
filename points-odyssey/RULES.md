@@ -52,7 +52,7 @@ Each character multiplies category spend during the **Income** step. Multipliers
 | Character | Theme | Spend multipliers | Special |
 |-----------|-------|-------------------|---------|
 | **The Consultant** | Business travel | Travel 3×, Dining 2×, Everything 1× | Starts with free Chase Sapphire–style card slot open |
-| **The Family** | Household life | Groceries 3×, Gas 2×, Everything 1× | +1 hotel night VP when staying 2+ nights |
+| **The Family** | Household life | Groceries 3×, Gas 2×, Everything 1× | +1 bonus VP on every hotel stay |
 | **The Nomad** | Remote work | Travel 2×, Transit 3×, Everything 1× | First flight each turn costs 10% fewer miles |
 | **The Foodie** | Culinary | Dining 4×, Groceries 2×, Everything 1× | Dining spend earns +500 bonus bank points once per turn |
 | **The Landlord** | Real estate | Rent 5×, Everything 1× | Only character who efficiently uses **Bilt**; Rent Day bonus possible |
@@ -121,17 +121,19 @@ Each route is colored by **primary airline** (that airline’s miles can book it
 
 Exact route list and mile costs live in the digital rules engine (`js/data.js`).
 
-### Hotels / Resorts
+### Hotels / Resorts (signature properties)
 
-Each city–brand pair has a **nightly award cost** (hotel points) and **VP for staying**:
+Each city lists **named signature hotels** (e.g. *Park Hyatt New York*, *Atlanta Marriott Marquis*, *Waldorf Astoria Las Vegas*), not bare brand labels. Paying still uses that property’s **loyalty currency** (Marriott / Hilton / Hyatt points).
 
-| Brand | Typical night cost | Flavor |
-|-------|--------------------|--------|
-| Hyatt | 8k–25k | High CPP — fewer points, strong VP |
-| Marriott | 15k–45k | Wide coverage |
-| Hilton | 20k–60k | High stock (esp. after Amex 1:2), lower CPP |
+**Hard limit:** each player may stay at a given property **once per game**, for **exactly one night**. You cannot re-book the same hotel later or multi-night at one property.
 
-Premium resorts (e.g. Hyatt in LAS, Marriott in MIA) award bonus VP.
+| Brand currency | Typical night cost | Flavor |
+|----------------|--------------------|--------|
+| Hyatt | 12k–25k | High CPP — fewer points, strong VP |
+| Marriott | 18k–45k | Wide coverage / luxury flags (Ritz, JW, Marquis) |
+| Hilton | 25k–55k | High stock (esp. after Amex 1:2), Waldorf / flagship Hiltons |
+
+Full property roster lives in `js/data.js`.
 
 ---
 
@@ -174,7 +176,7 @@ Pick any two (same action twice only if marked **repeatable**):
 | **Apply for Card** | Gain one new credit card (if under limit). Claim signup bonus after min-spend (often completed same turn if spend is high). |
 | **Transfer Points** | Move bank points → hotel or airline partner at listed ratio. Apply active transfer bonuses. *(repeatable)* |
 | **Book Flight** | Pay airline miles for a route connected to your current city (or any owned segment chain). Move your pawn to destination. +1 **segment**. May complete trip tickets. *(repeatable)* |
-| **Book Hotel** | Pay hotel points for a brand available in your **current city**. Gain **nights** and **stay VP**. Must be present in city. *(repeatable)* |
+| **Book Hotel** | Stay **1 night** at one **signature hotel** in your current city. Pay that property’s brand points; score its VP. Each property only once per game. *(repeatable for different hotels)* |
 | **Draw Trip Tickets** | Draw 2 tickets, keep ≥1 (discard others). |
 | **Rest / Plan** | Gain +500 of any one bank currency you already earn (or +1 temporary action token next turn — digital: +1,000 flexible bank points to your strongest bank). |
 
@@ -231,7 +233,7 @@ Claimed once when the condition is first met:
 ### During the game
 
 - Trip tickets completed: **+VP** on the ticket
-- Hotel stays: **VP printed** on the resort night (× nights booked, max 3 nights per booking)
+- Hotel stays: **VP printed** on each signature property (1 night, once per property)
 - Achievements: as above
 
 ### Final scoring (after Round 10)

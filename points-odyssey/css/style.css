@@ -701,6 +701,11 @@ button {
   border-color: var(--gold);
 }
 
+.card-option.disabled-opt {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .card-option strong {
   display: block;
   margin-bottom: 0.15rem;
