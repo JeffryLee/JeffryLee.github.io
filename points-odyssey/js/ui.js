@@ -15,7 +15,7 @@ import {
 } from './game.js';
 import { BANKS, HOTELS, AIRLINES, getRoute } from './data.js';
 import { playBotActions } from './bot.js';
-import { initMusicUI, playTrack, unlockMusic } from './music.js';
+import { initMusicUI, playTrack } from './music.js';
 
 const game = new Game();
 let setupSelections = [];
