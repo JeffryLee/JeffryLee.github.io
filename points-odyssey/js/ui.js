@@ -25,6 +25,40 @@ function fmt(n) {
   return Math.round(n).toLocaleString();
 }
 
+/** Format character spend multipliers + special for tooltips */
+function characterSkillsHtml(c) {
+  const mults = Object.entries(c.multipliers || {})
+    .map(([k, v]) => `<li><strong>${v}×</strong> ${k}</li>`)
+    .join('');
+  const cardLimit = GAME_CONFIG.defaultCardLimit + (c.cardLimitBonus || 0);
+  const home = CITIES[c.homeCity] ? CITIES[c.homeCity].name : c.homeCity;
+  return `
+    <div class="skill-tooltip" role="tooltip">
+      <div class="skill-tip-name">${c.name}</div>
+      <p class="skill-tip-blurb">${c.blurb || ''}</p>
+      <div class="skill-tip-section">
+        <span class="skill-tip-label">Spend skills</span>
+        <ul class="skill-mults">${mults}</ul>
+      </div>
+      <div class="skill-tip-section">
+        <span class="skill-tip-label">Special</span>
+        <p class="skill-tip-special">${c.specialDesc}</p>
+      </div>
+      <div class="skill-tip-meta">
+        <span>Home: ${home}</span>
+        <span>Cards: up to ${cardLimit}</span>
+      </div>
+    </div>
+  `;
+}
+
+function characterSkillsTitle(c) {
+  const mults = Object.entries(c.multipliers || {})
+    .map(([k, v]) => `${v}× ${k}`)
+    .join(', ');
+  return `${c.name}\nSpend: ${mults}\nSkill: ${c.specialDesc}\nHome: ${c.homeCity}`;
+}
+
 function showScreen(id) {
   $$('.screen').forEach((s) => s.classList.remove('active'));
   $(`#${id}`)?.classList.add('active');
@@ -44,15 +78,18 @@ function renderSetup() {
   const grid = $('#character-grid');
   grid.innerHTML = CHARACTERS.map((c) => {
     const taken = setupSelections.some((s) => s.characterId === c.id);
+    const home = CITIES[c.homeCity] ? CITIES[c.homeCity].name : c.homeCity;
     return `
-      <button type="button" class="char-card ${taken ? 'taken' : ''}" data-id="${c.id}" ${taken ? 'disabled' : ''}>
+      <button type="button" class="char-card has-tooltip ${taken ? 'taken' : ''}" data-id="${c.id}" ${taken ? 'disabled' : ''} title="${characterSkillsTitle(c).replace(/"/g, '&quot;')}">
         <img src="${c.image}" alt="${c.name}" />
         <div class="char-info">
           <h3>${c.name}</h3>
           <p>${c.blurb}</p>
           <p class="special">${c.specialDesc}</p>
-          <p class="home">Home: ${CITIES[c.homeCity]?.name || c.homeCity}</p>
+          <p class="home">Home: ${home}</p>
+          <p class="hover-hint">Hover for full skills</p>
         </div>
+        ${characterSkillsHtml(c)}
       </button>
     `;
   }).join('');
@@ -84,10 +121,11 @@ function renderLobby() {
     .map(
       (s, i) => {
         const c = CHARACTERS.find((x) => x.id === s.characterId);
-        return `<li>
+        return `<li class="has-tooltip lobby-player">
           <img src="${c.image}" alt="" />
           <span><strong>${s.name}</strong> — ${c.name}</span>
           <button type="button" data-i="${i}" class="remove-p">✕</button>
+          ${characterSkillsHtml(c)}
         </li>`;
       }
     )
@@ -138,12 +176,13 @@ function renderPlayersBar(snap) {
     .map((p, i) => {
       const active = i === snap.currentPlayerIndex ? 'active' : '';
       return `
-        <div class="p-chip ${active}" title="${p.character.name}">
+        <div class="p-chip has-tooltip ${active}" title="${characterSkillsTitle(p.character).replace(/"/g, '&quot;')}">
           <img src="${p.character.image}" alt="" />
           <div>
             <strong>${p.name}</strong>
             <span>${p.vp} VP · ${p.city}</span>
           </div>
+          ${characterSkillsHtml(p.character)}
         </div>
       `;
     })

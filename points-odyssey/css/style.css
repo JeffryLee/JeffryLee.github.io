@@ -214,6 +214,161 @@ button {
   font-size: 0.8rem;
 }
 
+.char-info .hover-hint {
+  margin-top: 0.45rem !important;
+  font-size: 0.72rem !important;
+  color: rgba(212, 160, 23, 0.75) !important;
+  font-style: italic;
+}
+
+/* ——— Character skill tooltips ——— */
+
+.has-tooltip {
+  position: relative;
+}
+
+.skill-tooltip {
+  display: none;
+  position: absolute;
+  z-index: 80;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: min(280px, 70vw);
+  padding: 0.75rem 0.85rem;
+  background: #0f1a30;
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  text-align: left;
+  pointer-events: none;
+  color: var(--cream);
+  font-weight: 400;
+  white-space: normal;
+}
+
+.skill-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: #0f1a30;
+  border-left: 1px solid var(--gold);
+  border-top: 1px solid var(--gold);
+}
+
+.has-tooltip:hover .skill-tooltip,
+.has-tooltip:focus-within .skill-tooltip {
+  display: block;
+}
+
+/* Setup cards: tooltip above so it isn't clipped by grid bottom */
+.char-card .skill-tooltip {
+  top: auto;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.char-card .skill-tooltip::before {
+  top: auto;
+  bottom: -6px;
+  border-left: none;
+  border-top: none;
+  border-right: 1px solid var(--gold);
+  border-bottom: 1px solid var(--gold);
+}
+
+/* Player chips: drop below header */
+.p-chip .skill-tooltip {
+  top: calc(100% + 10px);
+  bottom: auto;
+  left: 0;
+  transform: none;
+  min-width: 240px;
+}
+
+.p-chip .skill-tooltip::before {
+  left: 18px;
+  transform: rotate(45deg);
+}
+
+/* Lobby list: open to the left of the sticky panel */
+.lobby-player .skill-tooltip {
+  left: auto;
+  right: calc(100% + 10px);
+  top: 0;
+  transform: none;
+  width: 260px;
+}
+
+.lobby-player .skill-tooltip::before {
+  top: 14px;
+  left: auto;
+  right: -6px;
+  transform: rotate(45deg);
+  border-left: none;
+  border-top: 1px solid var(--gold);
+  border-right: 1px solid var(--gold);
+  border-bottom: none;
+}
+
+.skill-tip-name {
+  font-weight: 700;
+  color: var(--gold-soft);
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.skill-tip-blurb {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  color: var(--cream-dim);
+  line-height: 1.35;
+}
+
+.skill-tip-section {
+  margin-bottom: 0.5rem;
+}
+
+.skill-tip-label {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  margin-bottom: 0.2rem;
+}
+
+.skill-mults {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--cream);
+}
+
+.skill-tip-special {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--cream);
+}
+
+.skill-tip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.72rem;
+  color: var(--cream-dim);
+}
+
 .lobby-panel {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -282,6 +437,7 @@ button {
   position: sticky;
   top: 0;
   z-index: 20;
+  overflow: visible;
 }
 
 .game-header .brand {
@@ -323,7 +479,12 @@ button {
   gap: 0.5rem;
   flex: 1;
   overflow-x: auto;
+  overflow-y: visible;
   padding: 0.15rem 0;
+}
+
+.game-header {
+  overflow: visible;
 }
 
 .p-chip {
