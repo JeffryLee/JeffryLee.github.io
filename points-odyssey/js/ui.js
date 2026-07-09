@@ -95,8 +95,9 @@ function formatSpendRollHtml(roll) {
 
 function showScreen(id) {
   $$('.screen').forEach((s) => s.classList.remove('active'));
-  $(`#${id}`)?.classList.add('active');
-  // Music beds by screen
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  // Music beds by screen (no-ops until user has started music once)
   if (id === 'screen-setup' || id === 'screen-rules') {
     playTrack('menu');
   } else if (id === 'screen-game') {

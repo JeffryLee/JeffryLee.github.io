@@ -31,11 +31,11 @@
               <button type="button" class="btn" id="btn-quick-demo">
                 Quick Demo (you + 2 bots)
               </button>
-              <button type="button" class="btn" data-music-mute title="Click to play or mute music">
-                🔊 Music
+              <button type="button" class="btn primary" data-music-mute id="btn-music-setup">
+                ▶ Play music
               </button>
-              <span class="muted" style="font-size:0.8rem;align-self:center"
-                >Click once to start music</span
+              <span id="music-status" class="muted" style="font-size:0.8rem;align-self:center"
+                >Music starts when you click Play</span
               >
             </div>
           </div>
@@ -189,8 +189,8 @@
           <span class="tag" id="actions-left">2 actions</span>
         </div>
         <div id="players-bar"></div>
-        <button type="button" class="btn" data-music-mute title="Mute music">
-          🔊 Music
+        <button type="button" class="btn" data-music-mute id="btn-music-game">
+          ▶ Play music
         </button>
         <button type="button" class="btn" id="btn-how-to">Rules</button>
       </header>
@@ -272,6 +272,9 @@
     </div>
 
     <div id="toast" class="toast"></div>
+
+    <!-- Background music (controlled by js/music.js) -->
+    <audio id="bg-music" loop playsinline preload="auto"></audio>
 
     <script type="module" src="js/ui.js"></script>
   </body>
