@@ -1515,13 +1515,4 @@ function wireNav() {
 wireNav();
 initMusicUI();
 renderSetup();
-showScreen('screen-setup');
-// Start menu music after first click (also handled in unlockMusic)
-document.addEventListener(
-  'click',
-  () => {
-    unlockMusic();
-    playTrack('menu');
-  },
-  { once: true }
-);
+showScreen('screen-setup'); // sets desiredTrack = menu (play waits for gesture)
