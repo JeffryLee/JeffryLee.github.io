@@ -37,9 +37,10 @@ Game systems are **inspired by** real US transfer ecosystems (Chase Ultimate Rew
 4. Deal each player **3 Trip Tickets**. Keep **2**, discard 1 face-down to the ticket deck bottom. (You may keep all 3 in a harder variant.)
 5. Shuffle the **Event deck**.
 6. Each player starts with:
-   - **$5,000 cash budget** (abstract monthly spending power each Income phase)
-   - **0** bank / hotel / airline points
-   - **No credit cards** yet
+   - **$5,000** monthly spend budget each Income phase
+   - A **starter credit card** matching their character (so round 1 can earn)
+   - A small bank seed (~3,000 Chase) plus any instant signup on the starter card
+   - **0** hotel/airline points (until you transfer)
 7. Place the board, set **Round marker to 1**, and **Max rounds = 10** (default).
 8. The player who most recently used a travel credit card goes first (or random).
 
@@ -54,11 +55,11 @@ What characters *do* change is the **probability that each spend category appear
 | Character | Spend appearance (approx.) | Special skill |
 |-----------|----------------------------|---------------|
 | **The Consultant** | Travel, dining, flights/hotels | +10% miles when transferring to United |
-| **The Family** | Groceries, gas, dining, some travel | +1 bonus VP on every hotel stay |
+| **The Family** | Groceries, gas, dining, some travel | +2 bonus VP on every hotel stay |
 | **The Nomad** | Transit, travel, hotels/flights | First flight each turn costs 10% fewer miles |
 | **The Foodie** | Dining, groceries dominant | +500 bank pts if any dining spend this turn |
 | **The Landlord** | Rent dominant, some dining/travel | Always +25% Bilt earn |
-| **The Executive** | Flights, hotels, dining, travel | Hold up to **4** credit cards |
+| **The Executive** | Flights, hotels, dining, travel | Hold up to **3** credit cards (others cap at 2) |
 
 **Points earned** = dollars in category × best **credit card** earn rate for that category.
 
@@ -127,13 +128,9 @@ Exact route list and mile costs live in the digital rules engine (`js/data.js`).
 
 Each city lists **named signature hotels** (e.g. *Park Hyatt New York*, *Atlanta Marriott Marquis*, *Waldorf Astoria Las Vegas*), not bare brand labels. Paying still uses that property’s **loyalty currency** (Marriott / Hilton / Hyatt points).
 
-**Hard limit:** each player may stay at a given property **once per game**, for **exactly one night**. You cannot re-book the same hotel later or multi-night at one property.
+**Hard limit:** each player may stay at a given property **once per game**, for **exactly one night**.
 
-| Brand currency | Typical night cost | Flavor |
-|----------------|--------------------|--------|
-| Hyatt | 12k–25k | High CPP — fewer points, strong VP |
-| Marriott | 18k–45k | Wide coverage / luxury flags (Ritz, JW, Marquis) |
-| Hilton | 25k–55k | High stock (esp. after Amex 1:2), Waldorf / flagship Hiltons |
+Hotel nights are a **primary scoring path**: award costs are discounted (~25%), base stay VP is **doubled**, Family gets +2, and the first stay in each city +1 VP. Leftover unspent points convert poorly at game end—**travel and hotels beat hoarding**.
 
 Full property roster lives in `js/data.js`.
 
@@ -191,22 +188,15 @@ After all players finish a round, advance the **Round marker**. After Round 10, 
 
 ---
 
-## Trip Tickets (Ticket to Ride style)
+## Trip Tickets
 
 Each ticket shows **Origin → Destination**, **VP if completed**, and **penalty if incomplete** at game end.
 
-Examples:
+**Completion (simplified):** You must have **visited both cities** at least once (your pawn has landed in origin and destination). You do **not** need a continuous flight graph between them—just get to both places.
 
-| Ticket | VP | Penalty |
-|--------|----|---------|
-| NYC → LAX | 12 | −6 |
-| SEA → MIA | 15 | −8 |
-| BOS → DEN | 8 | −4 |
-| ATL → SFO | 11 | −5 |
+Opening tickets prefer endpoints near your home city. Regional short tickets (e.g. NYC–BOS) score less but finish faster.
 
-**Completion:** You must have traveled a continuous path of **booked flights this game** (your personal route network) connecting origin to destination. Order of travel can be any; the graph of your completed segments matters.
-
-You may hold up to **5** trip tickets. Drawing when full requires discarding down to 5.
+You may hold up to **4** trip tickets.
 
 ---
 
@@ -240,10 +230,10 @@ Claimed once when the condition is first met:
 ### Final scoring (after Round 10)
 
 1. **Incomplete tickets:** apply **penalties**
-2. **Leftover points:** convert at weak rates  
-   - Bank points: 5,000 → 1 VP  
-   - Hotel points: 10,000 → 1 VP  
-   - Airline miles: 8,000 → 1 VP  
+2. **Leftover points:** convert at **very weak** rates (hoarding loses to travel)  
+   - Bank points: 12,000 → 1 VP  
+   - Hotel points: 25,000 → 1 VP  
+   - Airline miles: 20,000 → 1 VP  
 3. **Most cities visited:** +3 VP (tie: all tied players get +2)
 4. **Longest continuous route** (most segments in one path): +4 VP
 

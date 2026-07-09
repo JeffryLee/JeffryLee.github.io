@@ -307,7 +307,11 @@ function showCityInfo(cityId, cur) {
         .map((h) => {
           const brand = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
           const done = stayed.has(h.id) ? ' ✓ stayed' : '';
-          return `<li><strong>${h.name}</strong><br/><span class="muted">${brand} · ${fmt(h.cost)} pts · ${h.vp} VP${done}</span></li>`;
+          const cost = Math.floor(
+            h.cost * (GAME_CONFIG.hotelCostMultiplier || 1)
+          );
+          const vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
+          return `<li><strong>${h.name}</strong><br/><span class="muted">${brand} · ${fmt(cost)} pts · ${vp} VP${done}</span></li>`;
         })
         .join('')}
     </ul>
@@ -371,14 +375,23 @@ function renderHand(cur, snap) {
     $('#my-tickets').innerHTML = `<span class="muted">No trip tickets yet</span>`;
   } else {
     $('#my-tickets').innerHTML = [
-      ...openTickets.map(
-        (t) =>
-          `<div class="ticket open" title="In progress">
+      ...openTickets.map((t) => {
+        const vFrom = cur.visited.includes(t.from);
+        const vTo = cur.visited.includes(t.to);
+        const progress =
+          vFrom && vTo
+            ? 'ready'
+            : vFrom || vTo
+              ? 'half'
+              : 'none';
+        return `<div class="ticket open" title="Visit both cities to complete">
             <span class="ticket-status" aria-label="Open">○</span>
-            <strong>${t.from} → ${t.to}</strong>
-            <span class="ticket-pts">+${t.points} / −${t.penalty}</span>
-          </div>`
-      ),
+            <strong>${t.from}${vFrom ? '✓' : ''} → ${t.to}${vTo ? '✓' : ''}</strong>
+            <span class="ticket-pts">+${t.points} / −${t.penalty}${
+              progress === 'half' ? ' · 1/2' : ''
+            }</span>
+          </div>`;
+      }),
       ...doneTickets.map(
         (t) =>
           `<div class="ticket completed" title="Completed · +${t.points} VP earned">
@@ -448,7 +461,9 @@ function renderPhasePanel(cur, snap) {
       }
       <div class="income-actions">
         <button type="button" class="btn primary" id="btn-auto-income">Earn points on this spend</button>
-        <button type="button" class="btn" id="btn-reroll-spend">Re-roll lifestyle spend</button>
+        <button type="button" class="btn" id="btn-reroll-spend" ${
+          (cur.turn.spendRerollsLeft || 0) <= 0 ? 'disabled' : ''
+        }>Re-roll lifestyle (${cur.turn.spendRerollsLeft || 0} left)</button>
         <button type="button" class="btn" id="btn-custom-income">Adjust allocation…</button>
       </div>
     `;
@@ -760,35 +775,17 @@ function openFlightModal() {
   openModal(
     `Book flight from ${from}`,
     `
-      <p class="muted">Nonstop or <strong>1 stop</strong> on the <strong>same airline</strong>. One-stop tickets cost both legs and count as 2 segments (1 action).</p>
-      <div class="flight-list">
-        ${options
-          .map((opt, idx) => {
-            const destName = CITIES[opt.to] ? CITIES[opt.to].name : opt.to;
-            const path = opt.via
-              ? `${from} → ${opt.via} → ${opt.to}`
-              : `${from} → ${opt.to}`;
-            const stopLabel = opt.stops === 0 ? 'Nonstop' : `1 stop via ${opt.via}`;
-            const airLabels = opt.airlines
-              .map((a) => (AIRLINES[a] ? AIRLINES[a].short : a))
-              .join('/');
-            return `
-              <label class="card-option">
-                <input type="radio" name="flight" value="${idx}"
-                  data-to="${opt.to}"
-                  data-via="${opt.via || ''}"
-                  data-airlines='${JSON.stringify(opt.airlines)}'
-                  data-cost="${opt.baseCost}"
-                  data-stops="${opt.stops}" />
-                <div>
-                  <strong>${path}</strong> (${destName})
-                  <p>${stopLabel} · ${airLabels} · base ${fmt(opt.baseCost)} mi${opt.stops ? ' · 2 segments' : ''}</p>
-                </div>
-              </label>
-            `;
-          })
-          .join('')}
-      </div>
+      <p class="muted">Nonstop or <strong>1 stop</strong> (same airline). Visit both ticket cities to complete trips.</p>
+      <label class="field" style="margin-bottom:0.5rem">
+        <span>Show
+          <select id="flight-filter">
+            <option value="nonstop">Nonstop only</option>
+            <option value="all">All (incl. 1-stop)</option>
+            <option value="onestop">1-stop only</option>
+          </select>
+        </span>
+      </label>
+      <div class="flight-list" id="flight-list"></div>
       <label class="field">Pay with airline
         <select id="flight-airline"></select>
       </label>
@@ -814,6 +811,57 @@ function openFlightModal() {
     }
   );
 
+  const renderFlightList = () => {
+    const filter = ($('#flight-filter') && $('#flight-filter').value) || 'nonstop';
+    const filtered = options.filter((opt) => {
+      if (filter === 'nonstop') return opt.stops === 0;
+      if (filter === 'onestop') return opt.stops === 1;
+      return true;
+    });
+    const list = $('#flight-list');
+    if (!filtered.length) {
+      list.innerHTML = `<p class="muted">No flights in this filter. Try “All”.</p>`;
+      return;
+    }
+    list.innerHTML = filtered
+      .map((opt, idx) => {
+        const destName = CITIES[opt.to] ? CITIES[opt.to].name : opt.to;
+        const path = opt.via
+          ? `${from} → ${opt.via} → ${opt.to}`
+          : `${from} → ${opt.to}`;
+        const stopLabel = opt.stops === 0 ? 'Nonstop' : `1 stop via ${opt.via}`;
+        const airLabels = opt.airlines
+          .map((a) => (AIRLINES[a] ? AIRLINES[a].short : a))
+          .join('/');
+        const helpsTicket = (p.tickets || []).some(
+          (t) => t.from === opt.to || t.to === opt.to
+        );
+        return `
+          <label class="card-option">
+            <input type="radio" name="flight" value="${idx}"
+              data-to="${opt.to}"
+              data-via="${opt.via || ''}"
+              data-airlines='${JSON.stringify(opt.airlines)}'
+              data-cost="${opt.baseCost}"
+              data-stops="${opt.stops}" />
+            <div>
+              <strong>${path}</strong> (${destName})${helpsTicket ? ' 🎫' : ''}
+              <p>${stopLabel} · ${airLabels} · base ${fmt(opt.baseCost)} mi${opt.stops ? ' · 2 segments' : ''}</p>
+            </div>
+          </label>
+        `;
+      })
+      .join('');
+    list.querySelectorAll('input[name=flight]').forEach((r) => {
+      r.onchange = syncAirlines;
+    });
+    const first = list.querySelector('input[name=flight]');
+    if (first) {
+      first.checked = true;
+      syncAirlines();
+    }
+  };
+
   const syncAirlines = () => {
     const sel = $('#modal-body input[name=flight]:checked');
     if (!sel) return;
@@ -834,31 +882,29 @@ function openFlightModal() {
     $('#flight-cost').textContent = `Cost this turn: ${fmt(cost)} miles · ${segs} segment${segs > 1 ? 's' : ''} · 1 action`;
   };
 
-  $$('#modal-body input[name=flight]').forEach((r) => {
-    r.onchange = syncAirlines;
-  });
-  const first = $('#modal-body input[name=flight]');
-  if (first) {
-    first.checked = true;
-    syncAirlines();
-  }
+  $('#flight-filter').onchange = renderFlightList;
+  renderFlightList();
 }
 
 function openHotelModal() {
   const p = game.currentPlayer;
   const city = CITIES[p.city];
   const hotels = city.hotels || [];
-  const hotelMult = (p.turn && p.turn.hotelMult) || 1;
+  const hotelMult =
+    ((p.turn && p.turn.hotelMult) || 1) *
+    (GAME_CONFIG.hotelCostMultiplier || 1);
+  const vpMult = GAME_CONFIG.hotelVpMultiplier || 1;
   const freeNight = p.turn && p.turn.freeNightAvailable;
 
   openModal(
     `Book 1 night in ${city.name}`,
     `
-      <p class="muted">Each signature hotel can be stayed at <strong>once per game</strong> (1 night only).</p>
+      <p class="muted">Each property once per game (1 night). Hotel VP is boosted — stays score better than hoarding points.</p>
       <div class="flight-list">
         ${hotels
           .map((h) => {
             const cost = Math.floor(h.cost * hotelMult);
+            const vp = Math.round((h.vp || 2) * vpMult);
             const bal = p.hotels[h.brand] || 0;
             const already = p.stayedHotels.has(h.id);
             const brandName = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
@@ -870,7 +916,7 @@ function openHotelModal() {
                 <div>
                   <strong>${h.name}</strong>
                   <span class="bank-tag" style="background:${HOTELS[h.brand] ? HOTELS[h.brand].color : '#666'}">${brandName}</span>
-                  <p>${fmt(cost)} pts · ${h.vp} VP · balance ${fmt(bal)} ${brandName}
+                  <p>${fmt(cost)} pts · <strong>${vp} VP</strong> · balance ${fmt(bal)} ${brandName}
                     ${already ? ' · <em>already stayed</em>' : !canPay ? ' · <em>short on points</em>' : ''}</p>
                 </div>
               </label>

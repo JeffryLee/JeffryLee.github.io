@@ -23,6 +23,8 @@ import {
   rollSpendAllocation,
   spendProfilePercents,
   SPEND_DRAWS,
+  STARTER_CARDS,
+  neighbors,
 } from './data.js';
 
 function emptyBanks() {
@@ -84,7 +86,34 @@ function resetTurnState(player) {
     diningBonusUsed: false,
     // Lifestyle roll: which spend categories appear this turn
     spendRoll: rollSpendAllocation(player.character),
+    spendRerollsLeft: GAME_CONFIG.maxSpendRerolls,
   };
+}
+
+function giveStarterCard(player) {
+  const cardId = STARTER_CARDS[player.character.id] || 'cfu';
+  const def = CREDIT_CARDS.find((c) => c.id === cardId);
+  if (!def) return null;
+  player.cards.push({ ...def });
+  player.cardSpendProgress[def.id] = 0;
+  player.cardBonusClaimed[def.id] = false;
+  // Instant signup if minSpend is 0
+  if (def.minSpend <= 0 && def.signupBonus > 0) {
+    player.banks[def.bank] = (player.banks[def.bank] || 0) + def.signupBonus;
+    player.cardBonusClaimed[def.id] = true;
+  }
+  return def;
+}
+
+/** Score tickets for opening deal: prefer home / nearby endpoints */
+function ticketDealScore(ticket, homeCity) {
+  let score = ticket.points;
+  if (ticket.from === homeCity || ticket.to === homeCity) score += 20;
+  const near = neighbors(homeCity);
+  if (near.includes(ticket.from) || near.includes(ticket.to)) score += 10;
+  // Mild preference for shorter/regional (lower points often = closer)
+  if (ticket.points <= 10) score += 6;
+  return score;
 }
 
 export class Game {
@@ -146,25 +175,37 @@ export class Game {
     this.finalScores = null;
     this.log = [];
 
-    // Deal tickets
+    // Deal tickets, starter cards, seed points
     for (const p of this.players) {
       resetTurnState(p);
-      const dealt = [];
-      for (let i = 0; i < GAME_CONFIG.startingTickets; i++) {
-        if (this.ticketDeck.length) dealt.push(this.ticketDeck.pop());
+
+      // Opening tickets: deal more, keep ones near home when possible
+      const pool = [];
+      for (let i = 0; i < GAME_CONFIG.startingTickets + 2 && this.ticketDeck.length; i++) {
+        pool.push(this.ticketDeck.pop());
       }
-      // Auto-keep best 2 by points (player can manage later via draw)
-      dealt.sort((a, b) => b.points - a.points);
-      p.tickets = dealt.slice(0, GAME_CONFIG.keepTickets);
-      const discarded = dealt.slice(GAME_CONFIG.keepTickets);
+      pool.sort(
+        (a, b) =>
+          ticketDealScore(b, p.city) - ticketDealScore(a, p.city)
+      );
+      p.tickets = pool.slice(0, GAME_CONFIG.keepTickets);
+      const discarded = pool.slice(GAME_CONFIG.keepTickets);
       this.ticketDeck = shuffle([...discarded, ...this.ticketDeck]);
 
-      // Starter: Freedom Unlimited style soft entry — 5k Chase
-      p.banks.chase = 5000;
+      // Starter credit card so round-1 income can earn
+      const starter = giveStarterCard(p);
+      p.banks.chase =
+        (p.banks.chase || 0) + (GAME_CONFIG.starterBankPoints || 0);
+      // Seed a little airline from starter bank theme (optional small fly)
+      if (starter) {
+        this.addLog(
+          `${p.name} starts with ${starter.name} (${starter.bank}) and $${GAME_CONFIG.budgetPerTurn.toLocaleString()}/mo lifestyle spend.`
+        );
+      }
     }
 
     this.addLog(
-      `Game started with ${this.players.length} players. Round 1 begins.`
+      `Game started with ${this.players.length} players. Complete tickets by visiting both cities. Round 1 begins.`
     );
     this.beginTurn();
     return this;
@@ -431,12 +472,18 @@ export class Game {
     return rollSpendAllocation(player.character);
   }
 
-  /** Re-roll lifestyle spend for this turn (optional UI action, free). */
+  /** Re-roll lifestyle spend (limited per turn). */
   rerollSpend() {
     const p = this.currentPlayer;
     if (p.turn.incomeDone) throw new Error('Income already done');
+    if ((p.turn.spendRerollsLeft || 0) <= 0) {
+      throw new Error('No lifestyle re-rolls left this turn');
+    }
+    p.turn.spendRerollsLeft -= 1;
     p.turn.spendRoll = rollSpendAllocation(p.character);
-    this.addLog(`${p.name} re-rolls lifestyle spend for this turn.`);
+    this.addLog(
+      `${p.name} re-rolls lifestyle spend (${p.turn.spendRerollsLeft} left).`
+    );
     return { ...p.turn.spendRoll };
   }
 
@@ -607,7 +654,9 @@ export class Game {
     }
 
     const brand = hotel.brand;
-    let totalCost = Math.floor(hotel.cost * p.turn.hotelMult);
+    const costMult =
+      (p.turn.hotelMult || 1) * (GAME_CONFIG.hotelCostMultiplier || 1);
+    let totalCost = Math.floor(hotel.cost * costMult);
     const nights = 1;
 
     if (p.turn.freeNightAvailable) {
@@ -627,11 +676,20 @@ export class Game {
     p.nightsByBrand[brand] = (p.nightsByBrand[brand] || 0) + nights;
     p.stayedHotels.add(hotelId);
 
-    let stayVp = hotel.vp || 2;
+    // Buff hotel VP so staying beats hoarding leftovers
+    let stayVp = Math.round(
+      (hotel.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1)
+    );
     if (p.character.special === 'family_nights') {
-      stayVp += 1;
+      stayVp += 2;
     }
     stayVp += p.turn.hotelVpBonus;
+    // First stay in a new city: +1 VP
+    if (!p._hotelCities) p._hotelCities = new Set();
+    if (!p._hotelCities.has(city.id)) {
+      p._hotelCities.add(city.id);
+      stayVp += 1;
+    }
     p.turn.hotelVpBonus = 0;
     p.vp += stayVp;
     p.turn.actionsLeft -= 1;
@@ -697,46 +755,30 @@ export class Game {
     }
     // Prefer bank of a held card
     if (p.cards.length) best = p.cards[0].bank;
-    p.banks[best] = (p.banks[best] || 0) + 1000;
+    const gain = GAME_CONFIG.restPlanPoints || 3000;
+    p.banks[best] = (p.banks[best] || 0) + gain;
     p.turn.actionsLeft -= 1;
-    this.addLog(`${p.name} plans ahead: +1,000 ${best}.`);
+    this.addLog(`${p.name} plans ahead: +${gain.toLocaleString()} ${best}.`);
   }
 
-  // Graph connectivity for trip tickets
-  canConnect(player, from, to) {
-    if (from === to) return true;
-    const adj = {};
-    for (const key of player.network) {
-      const [a, b] = key.split('-');
-      if (!adj[a]) adj[a] = [];
-      if (!adj[b]) adj[b] = [];
-      adj[a].push(b);
-      adj[b].push(a);
-    }
-    const seen = new Set([from]);
-    const q = [from];
-    while (q.length) {
-      const cur = q.shift();
-      for (const n of adj[cur] || []) {
-        if (seen.has(n)) continue;
-        if (n === to) return true;
-        seen.add(n);
-        q.push(n);
-      }
-    }
-    return false;
+  /**
+   * Ticket complete if player has VISITED both endpoints (landed in each city).
+   * Simpler and more completable than full continuous network path.
+   */
+  ticketComplete(player, ticket) {
+    return player.visited.has(ticket.from) && player.visited.has(ticket.to);
   }
 
   checkTripTickets(player) {
     const remaining = [];
     const newlyCompleted = [];
     for (const t of player.tickets) {
-      if (this.canConnect(player, t.from, t.to)) {
+      if (this.ticketComplete(player, t)) {
         player.vp += t.points;
         player.completedTickets.push(t);
         newlyCompleted.push(t);
         this.addLog(
-          `${player.name} completes trip ${t.from}→${t.to} for ${t.points} VP!`
+          `${player.name} completes trip ${t.from}→${t.to} (visited both) for ${t.points} VP!`
         );
         if (
           (WEST.has(t.from) && EAST.has(t.to)) ||
@@ -833,16 +875,19 @@ export class Game {
         p.vp -= t.penalty;
       }
 
-      // Leftover points
+      // Leftover points — weak conversion so travel/hotels/tickets dominate
       let leftoverVp = 0;
+      const bankDiv = GAME_CONFIG.leftoverBankPerVp || 12000;
+      const hotelDiv = GAME_CONFIG.leftoverHotelPerVp || 25000;
+      const airDiv = GAME_CONFIG.leftoverAirlinePerVp || 20000;
       for (const b of Object.keys(p.banks)) {
-        leftoverVp += Math.floor((p.banks[b] || 0) / 5000);
+        leftoverVp += Math.floor((p.banks[b] || 0) / bankDiv);
       }
       for (const h of Object.keys(p.hotels)) {
-        leftoverVp += Math.floor((p.hotels[h] || 0) / 10000);
+        leftoverVp += Math.floor((p.hotels[h] || 0) / hotelDiv);
       }
       for (const a of Object.keys(p.airlines)) {
-        leftoverVp += Math.floor((p.airlines[a] || 0) / 8000);
+        leftoverVp += Math.floor((p.airlines[a] || 0) / airDiv);
       }
       p.vp += leftoverVp;
 
@@ -940,6 +985,7 @@ export class Game {
               freeNightAvailable: p.turn.freeNightAvailable,
               pendingTickets: p.turn.pendingTickets,
               spendRoll: p.turn.spendRoll ? { ...p.turn.spendRoll } : null,
+              spendRerollsLeft: p.turn.spendRerollsLeft,
               spendProfile: spendProfilePercents(p.character.spendProfile),
             }
           : null,
