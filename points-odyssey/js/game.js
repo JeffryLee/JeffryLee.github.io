@@ -100,7 +100,11 @@ function giveStarterCard(player) {
   player.cardBonusClaimed[def.id] = false;
   // Instant signup if minSpend is 0
   if (def.minSpend <= 0 && def.signupBonus > 0) {
-    player.banks[def.bank] = (player.banks[def.bank] || 0) + def.signupBonus;
+    let bonus = def.signupBonus;
+    if (player.character.special === 'extra_card') {
+      bonus = Math.floor(bonus * 1.2);
+    }
+    player.banks[def.bank] = (player.banks[def.bank] || 0) + bonus;
     player.cardBonusClaimed[def.id] = true;
   }
   return def;
@@ -383,8 +387,9 @@ export class Game {
       let pts = Math.floor(spend * rate);
 
       let biltMult = p.turn.biltBoost || 1;
+      // Landlord: +20% Bilt earn
       if (p.character.special === 'rent_day' && bank === 'bilt') {
-        biltMult *= 1.25;
+        biltMult *= 1.2;
       }
       if (bank === 'bilt') {
         pts = Math.floor(pts * biltMult);
@@ -404,7 +409,7 @@ export class Game {
       this.maybeClaimSignup(p, card);
     }
 
-    // Foodie dining bonus (ability, not a spend multiplier)
+    // Foodie: dining spend → +2 VP and +2,500 bank (once/turn)
     if (
       p.character.special === 'dining_bonus' &&
       (allocation.dining || 0) > 0 &&
@@ -413,10 +418,12 @@ export class Game {
       const best = this.bestEarnRate(p, 'dining');
       const bank = best.card ? best.bank : p.cards[0] ? p.cards[0].bank : null;
       if (bank) {
-        p.banks[bank] = (p.banks[bank] || 0) + 500;
-        totalEarned += 500;
-        p.turn.diningBonusUsed = true;
+        p.banks[bank] = (p.banks[bank] || 0) + 2000;
+        totalEarned += 2000;
       }
+      p.vp += 1;
+      p.turn.diningBonusUsed = true;
+      this.addLog(`${p.name}'s Foodie skill: +1 VP and dining bonus points.`);
     }
 
     p.turn.incomeDone = true;
@@ -458,11 +465,15 @@ export class Game {
     if (player.cardBonusClaimed[card.id]) return;
     const progress = player.cardSpendProgress[card.id] || 0;
     if (progress >= card.minSpend && card.signupBonus > 0) {
-      player.banks[card.bank] =
-        (player.banks[card.bank] || 0) + card.signupBonus;
+      let bonus = card.signupBonus;
+      // Executive: +20% larger signup bonuses
+      if (player.character.special === 'extra_card') {
+        bonus = Math.floor(bonus * 1.2);
+      }
+      player.banks[card.bank] = (player.banks[card.bank] || 0) + bonus;
       player.cardBonusClaimed[card.id] = true;
       this.addLog(
-        `${player.name} hits min-spend on ${card.name}! +${card.signupBonus.toLocaleString()} ${card.bank}.`
+        `${player.name} hits min-spend on ${card.name}! +${bonus.toLocaleString()} ${card.bank}.`
       );
     }
   }
@@ -549,11 +560,7 @@ export class Game {
       p.turn.transferBonus = null;
     }
 
-    // Consultant: +10% on United transfers
-    if (p.character.special === 'travel_focus' && partner === 'united') {
-      out = Math.floor(out * 1.1);
-      this.addLog(`${p.name}'s Consultant skill: +10% United transfer.`);
-    }
+    // (Consultant no longer boosts United transfers — uses flight discount instead)
 
     p.banks[bank] -= amount;
     if (type === 'hotel') {
@@ -595,8 +602,13 @@ export class Game {
     }
 
     let cost = Math.floor(itinerary.baseCost * p.turn.flightMult);
+    // Consultant: all flights −15%
+    if (p.character.special === 'polished_routes') {
+      cost = Math.floor(cost * 0.85);
+    }
+    // Nomad: first flight each turn −15%
     if (p.character.special === 'cheap_flight' && p.turn.flightsThisTurn === 0) {
-      cost = Math.floor(cost * 0.9);
+      cost = Math.floor(cost * 0.85);
     }
     if ((p.airlines[airline] || 0) < cost) {
       throw new Error(`Need ${cost.toLocaleString()} ${airline} miles`);
@@ -605,11 +617,22 @@ export class Game {
     p.airlines[airline] -= cost;
 
     // Record every flown leg on personal network + visit cities
+    let newCities = 0;
     for (const leg of itinerary.legs) {
       p.network.add(routeKey(leg.from, leg.to));
-      p.visited.add(leg.to);
+      if (!p.visited.has(leg.to)) {
+        p.visited.add(leg.to);
+        newCities += 1;
+      } else {
+        p.visited.add(leg.to);
+      }
     }
     p.city = toCity;
+    // Nomad: +1 VP per newly visited city this flight
+    if (p.character.special === 'cheap_flight' && newCities > 0) {
+      p.vp += newCities;
+      this.addLog(`${p.name}'s Nomad skill: +${newCities} VP for new cities.`);
+    }
 
     const legCount = itinerary.legs.length;
     p.segments += legCount;
@@ -660,8 +683,12 @@ export class Game {
     }
 
     const brand = hotel.brand;
-    const costMult =
+    let costMult =
       (p.turn.hotelMult || 1) * (GAME_CONFIG.hotelCostMultiplier || 1);
+    // Family: group rate −20% hotel costs
+    if (p.character.special === 'group_rate') {
+      costMult *= 0.9; // Family: −10% hotel cost
+    }
     let totalCost = Math.floor(hotel.cost * costMult);
     const nights = 1;
 
@@ -686,9 +713,6 @@ export class Game {
     let stayVp = Math.round(
       (hotel.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1)
     );
-    if (p.character.special === 'family_nights') {
-      stayVp += 2;
-    }
     stayVp += p.turn.hotelVpBonus;
     // First stay in a new city: +1 VP
     if (!p._hotelCities) p._hotelCities = new Set();
@@ -780,11 +804,16 @@ export class Game {
     const newlyCompleted = [];
     for (const t of player.tickets) {
       if (this.ticketComplete(player, t)) {
-        player.vp += t.points;
+        let ticketVp = t.points;
+        // Consultant: +4 VP when completing a trip ticket
+        if (player.character.special === 'polished_routes') {
+          ticketVp += 4;
+        }
+        player.vp += ticketVp;
         player.completedTickets.push(t);
         newlyCompleted.push(t);
         this.addLog(
-          `${player.name} completes trip ${t.from}→${t.to} (visited both) for ${t.points} VP!`
+          `${player.name} completes trip ${t.from}→${t.to} (visited both) for ${ticketVp} VP!`
         );
         if (
           (WEST.has(t.from) && EAST.has(t.to)) ||

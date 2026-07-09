@@ -34,7 +34,7 @@ export const STARTER_CARDS = {
   consultant: 'cfu',
   family: 'cff',
   nomad: 'cfu',
-  foodie: 'custom_cash',
+  foodie: 'amex_blue', // flexible Amex earn (was Citi-locked Custom Cash)
   landlord: 'bilt_card',
   executive: 'amex_blue',
 };
@@ -104,17 +104,20 @@ export const CATEGORIES = [
  */
 export const SPEND_DRAWS = 5; // how many budget chunks are rolled per income
 
+/**
+ * Special skills rebalanced so no character is a runaway favorite.
+ * (Family no longer stacks free VP on every hotel night.)
+ */
 export const CHARACTERS = [
   {
     id: 'consultant',
     name: 'The Consultant',
     image: 'assets/char-consultant.jpg',
-    blurb: 'Road warrior chasing Chase Ultimate Rewards and United.',
+    blurb: 'Road warrior optimizing every award flight.',
     homeCity: 'NYC',
     cardLimitBonus: 0,
-    special: 'travel_focus',
-    specialDesc: 'When you transfer to United, gain +10% miles on that transfer.',
-    // Heavy travel + dining (client meals), some flights/hotels
+    special: 'polished_routes',
+    specialDesc: 'All award flights cost 15% fewer miles. Completing a trip ticket grants +4 bonus VP.',
     spendProfile: {
       travel: 35,
       dining: 25,
@@ -131,8 +134,8 @@ export const CHARACTERS = [
     blurb: 'Weekend getaways and free-night stacking.',
     homeCity: 'ORD',
     cardLimitBonus: 0,
-    special: 'family_nights',
-    specialDesc: '+1 bonus VP on every hotel stay.',
+    special: 'group_rate',
+    specialDesc: 'Hotel award nights cost 10% fewer points (no free VP).',
     spendProfile: {
       groceries: 35,
       gas: 20,
@@ -150,7 +153,7 @@ export const CHARACTERS = [
     homeCity: 'DEN',
     cardLimitBonus: 0,
     special: 'cheap_flight',
-    specialDesc: 'First flight each turn costs 10% fewer miles.',
+    specialDesc: 'First flight each turn costs 15% fewer miles. +1 VP the first time you land in a new city.',
     spendProfile: {
       transit: 30,
       travel: 25,
@@ -164,11 +167,11 @@ export const CHARACTERS = [
     id: 'foodie',
     name: 'The Foodie',
     image: 'assets/char-foodie.jpg',
-    blurb: 'Lives for dining — and Amex Gold synergy.',
+    blurb: 'Dining funds the adventures — and the scoreboard.',
     homeCity: 'SFO',
     cardLimitBonus: 0,
     special: 'dining_bonus',
-    specialDesc: 'If you spend any budget on dining this turn, +500 bank pts once (needs a card to choose bank).',
+    specialDesc: 'If any dining spend this turn: +1 VP and +2,000 to your best bank (once/turn).',
     spendProfile: {
       dining: 45,
       groceries: 25,
@@ -185,7 +188,7 @@ export const CHARACTERS = [
     homeCity: 'LAX',
     cardLimitBonus: 0,
     special: 'rent_day',
-    specialDesc: 'Bilt earn is always +25% for you (stacks with Rent Day events).',
+    specialDesc: 'Bilt earn is always +20% for you (stacks with Rent Day events).',
     spendProfile: {
       rent: 50,
       dining: 15,
@@ -203,7 +206,7 @@ export const CHARACTERS = [
     homeCity: 'ATL',
     cardLimitBonus: 1,
     special: 'extra_card',
-    specialDesc: 'Hold up to 3 credit cards (others cap at 2).',
+    specialDesc: 'Hold up to 3 credit cards (others cap at 2). Signup bonuses are +20% larger for you.',
     spendProfile: {
       flights: 25,
       hotels: 25,

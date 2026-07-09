@@ -78,24 +78,25 @@ const sum = (o) => Object.values(o || {}).reduce((a, b) => a + (b || 0), 0);
 
 function fCost(p, base) {
   let c = Math.floor(base * ((p.turn && p.turn.flightMult) || 1));
+  if (p.character.special === 'polished_routes') {
+    c = Math.floor(c * 0.85);
+  }
   if (p.character.special === 'cheap_flight' && !(p.turn && p.turn.flightsThisTurn)) {
-    c = Math.floor(c * 0.9);
+    c = Math.floor(c * 0.85);
   }
   return c;
 }
 
 function hCost(p, h) {
   if (p.turn && p.turn.freeNightAvailable) return 0;
-  return Math.floor(
-    h.cost *
-      ((p.turn && p.turn.hotelMult) || 1) *
-      (GAME_CONFIG.hotelCostMultiplier || 1)
-  );
+  let mult =
+    ((p.turn && p.turn.hotelMult) || 1) * (GAME_CONFIG.hotelCostMultiplier || 1);
+  if (p.character.special === 'group_rate') mult *= 0.9;
+  return Math.floor(h.cost * mult);
 }
 
 function hVp(p, h, cityId) {
   let vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
-  if (p.character.special === 'family_nights') vp += 2;
   if (!(p._hotelCities && p._hotelCities.has(cityId))) vp += 1;
   vp += (p.turn && p.turn.hotelVpBonus) || 0;
   return vp;
@@ -215,14 +216,11 @@ function makeXfer(p, kind, specific, minAmt = 10000) {
       if (!kind || partners[bonus.partner].type === kind) partner = bonus.partner;
     }
     if (!partner && kind === 'airline') {
-      if (p.character.special === 'travel_focus' && partners.united) partner = 'united';
-      else {
-        partner =
-          (partners.united && 'united') ||
-          (partners.delta && 'delta') ||
-          (partners.american && 'american') ||
-          null;
-      }
+      partner =
+        (partners.united && 'united') ||
+        (partners.delta && 'delta') ||
+        (partners.american && 'american') ||
+        null;
     }
     if (!partner && kind === 'hotel') {
       partner =

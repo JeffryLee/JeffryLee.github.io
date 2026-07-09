@@ -422,9 +422,9 @@ function showCityInfo(cityId, cur) {
         .map((h) => {
           const brand = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
           const done = stayed.has(h.id) ? ' ✓ stayed' : '';
-          const cost = Math.floor(
-            h.cost * (GAME_CONFIG.hotelCostMultiplier || 1)
-          );
+          let hMult = GAME_CONFIG.hotelCostMultiplier || 1;
+          if (cur.character && cur.character.special === 'group_rate') hMult *= 0.9;
+          const cost = Math.floor(h.cost * hMult);
           const vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
           return `<li><strong>${h.name}</strong><br/><span class="muted">${brand} · ${fmt(cost)} pts · ${vp} VP${done}</span></li>`;
         })
@@ -997,8 +997,11 @@ function openFlightModal() {
     if (!sel) return;
     const airlines = JSON.parse(sel.dataset.airlines);
     let cost = Math.floor(+sel.dataset.cost * flightMult);
+    if (p.character.special === 'polished_routes') {
+      cost = Math.floor(cost * 0.85);
+    }
     if (p.character.special === 'cheap_flight' && flightsThisTurn === 0) {
-      cost = Math.floor(cost * 0.9);
+      cost = Math.floor(cost * 0.85);
     }
     const segs = +sel.dataset.stops === 1 ? 2 : 1;
     $('#flight-airline').innerHTML = airlines
@@ -1020,9 +1023,10 @@ function openHotelModal() {
   const p = game.currentPlayer;
   const city = CITIES[p.city];
   const hotels = city.hotels || [];
-  const hotelMult =
+  let hotelMult =
     ((p.turn && p.turn.hotelMult) || 1) *
     (GAME_CONFIG.hotelCostMultiplier || 1);
+  if (p.character.special === 'group_rate') hotelMult *= 0.9;
   const vpMult = GAME_CONFIG.hotelVpMultiplier || 1;
   const freeNight = p.turn && p.turn.freeNightAvailable;
 

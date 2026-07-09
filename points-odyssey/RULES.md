@@ -54,12 +54,12 @@ What characters *do* change is the **probability that each spend category appear
 
 | Character | Spend appearance (approx.) | Special skill |
 |-----------|----------------------------|---------------|
-| **The Consultant** | Travel, dining, flights/hotels | +10% miles when transferring to United |
-| **The Family** | Groceries, gas, dining, some travel | +2 bonus VP on every hotel stay |
-| **The Nomad** | Transit, travel, hotels/flights | First flight each turn costs 10% fewer miles |
-| **The Foodie** | Dining, groceries dominant | +500 bank pts if any dining spend this turn |
-| **The Landlord** | Rent dominant, some dining/travel | Always +25% Bilt earn |
-| **The Executive** | Flights, hotels, dining, travel | Hold up to **3** credit cards (others cap at 2) |
+| **The Consultant** | Travel, dining, flights/hotels | Flights **−15%** miles; **+4 VP** per completed trip ticket |
+| **The Family** | Groceries, gas, dining, some travel | Hotel nights cost **10% fewer** points (no free VP) |
+| **The Nomad** | Transit, travel, hotels/flights | First flight **−15%** miles; **+1 VP** per new city visited |
+| **The Foodie** | Dining, groceries dominant | Dining spend: **+1 VP** and **+2,000** bank pts once/turn |
+| **The Landlord** | Rent dominant, some dining/travel | Always **+20%** Bilt earn (stacks with Rent Day) |
+| **The Executive** | Flights, hotels, dining, travel | Hold **3** cards; signup bonuses **+20%** larger |
 
 **Points earned** = dollars in category × best **credit card** earn rate for that category.
 
