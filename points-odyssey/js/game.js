@@ -106,14 +106,15 @@ function giveStarterCard(player) {
   return def;
 }
 
-/** Score tickets for opening deal: prefer home / nearby endpoints */
+/** Score tickets for opening deal: prefer home / nearby / short routes */
 function ticketDealScore(ticket, homeCity) {
   let score = ticket.points;
-  if (ticket.from === homeCity || ticket.to === homeCity) score += 20;
+  if (ticket.from === homeCity || ticket.to === homeCity) score += 35;
   const near = neighbors(homeCity);
-  if (near.includes(ticket.from) || near.includes(ticket.to)) score += 10;
-  // Mild preference for shorter/regional (lower points often = closer)
-  if (ticket.points <= 10) score += 6;
+  if (near.includes(ticket.from) || near.includes(ticket.to)) score += 18;
+  // Prefer short regional tickets (more completable)
+  if (ticket.points <= 10) score += 14;
+  else if (ticket.points <= 14) score += 6;
   return score;
 }
 

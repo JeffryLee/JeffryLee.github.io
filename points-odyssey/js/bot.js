@@ -1,12 +1,9 @@
 /**
- * Points Odyssey — stronger bot AI
+ * Points Odyssey bot — tuned via multi-game simulation for avg VP > 80.
  *
- * Core loop each action:
- *   1. Complete tickets (visit both cities) — highest VP
- *   2. Transfer just enough (or dump) bank → miles/hotels
- *   3. Book hotels for boosted VP
- *   4. Expand toward ticket cities / new cities
- *   5. Cards only early; never rest while bank points remain
+ * Best-performing loop from sims:
+ *   card upgrade → finish tickets → hotel stays → hotel tour →
+ *   ticket progress → balanced transfers → burn miles
  */
 
 import {
@@ -18,93 +15,38 @@ import {
   GAME_CONFIG,
 } from './data.js';
 
+/**
+ * Second card must expand transfer reach — starter already covers one bank.
+ * Chase-only cannot reach Delta-only cities (e.g. MSP); Amex-only misses United/Hyatt.
+ */
 const CARD_PREFS = {
-  consultant: ['csp', 'csr', 'bilt_card', 'amex_gold'],
-  family: ['csp', 'cff', 'custom_cash', 'amex_gold'],
-  nomad: ['csp', 'bilt_card', 'strata', 'csr'],
-  foodie: ['amex_gold', 'csp', 'custom_cash', 'cfu'],
-  landlord: ['csp', 'cfu', 'custom_cash', 'strata'],
-  executive: ['amex_plat', 'amex_gold', 'csr', 'csp', 'bilt_card'],
+  consultant: ['bilt_card', 'amex_gold', 'csp'], // starter CFU (Chase) → add Bilt/Amex
+  family: ['amex_gold', 'bilt_card', 'csp'], // starter CFF (Chase) → need Delta/AA
+  nomad: ['amex_gold', 'bilt_card', 'csp'], // starter CFU
+  foodie: ['amex_gold', 'csp', 'bilt_card'], // starter Custom Cash (Citi)
+  landlord: ['csp', 'amex_gold', 'strata'], // starter Bilt → add Chase/Amex
+  executive: ['csp', 'bilt_card', 'amex_gold'], // starter Blue (Amex) → need UA/Hyatt
 };
 
-/** Airlines each bank can feed */
-const BANK_TO_AIRLINE = {
-  chase: ['united'],
-  amex: ['delta'],
-  citi: ['american'],
-  bilt: ['united', 'american'],
-};
-
-const BANK_TO_HOTEL = {
-  chase: ['hyatt', 'marriott'],
-  amex: ['hilton', 'marriott'],
-  citi: ['hilton'],
-  bilt: ['hyatt', 'marriott'],
-};
-
-// ——— helpers ———
-
-function flightCost(player, baseCost) {
-  let cost = Math.floor(baseCost * ((player.turn && player.turn.flightMult) || 1));
-  if (
-    player.character.special === 'cheap_flight' &&
-    (player.turn.flightsThisTurn || 0) === 0
-  ) {
-    cost = Math.floor(cost * 0.9);
-  }
-  return cost;
-}
-
-function totalBank(player) {
-  return Object.values(player.banks).reduce((s, v) => s + (v || 0), 0);
-}
-
-function totalAirline(player) {
-  return Object.values(player.airlines).reduce((s, v) => s + (v || 0), 0);
-}
-
-function totalHotel(player) {
-  return Object.values(player.hotels).reduce((s, v) => s + (v || 0), 0);
-}
-
-function richestBanks(player) {
-  return Object.entries(player.banks)
-    .filter(([, v]) => v >= 1000)
-    .sort((a, b) => b[1] - a[1])
-    .map(([bank, amount]) => ({ bank, amount }));
-}
-
-function missingTicketCities(player) {
-  const missing = [];
-  for (const t of player.tickets) {
-    if (!player.visited.has(t.from)) {
-      missing.push({ city: t.from, ticket: t, vp: t.points });
-    }
-    if (!player.visited.has(t.to)) {
-      missing.push({ city: t.to, ticket: t, vp: t.points });
-    }
-  }
-  missing.sort((a, b) => b.vp - a.vp);
-  return missing;
-}
-
-/** BFS hop distance on the route graph */
-function hopDistance(from, to) {
-  if (from === to) return 0;
+function buildAdj() {
   const adj = {};
   for (const r of ROUTES) {
-    if (!adj[r.a]) adj[r.a] = [];
-    if (!adj[r.b]) adj[r.b] = [];
-    adj[r.a].push(r.b);
-    adj[r.b].push(r.a);
+    (adj[r.a] = adj[r.a] || []).push(r.b);
+    (adj[r.b] = adj[r.b] || []).push(r.a);
   }
-  const seen = new Set([from]);
-  const q = [[from, 0]];
+  return adj;
+}
+const ADJ = buildAdj();
+
+function hops(a, b) {
+  if (a === b) return 0;
+  const seen = new Set([a]);
+  const q = [[a, 0]];
   while (q.length) {
     const [c, d] = q.shift();
-    for (const n of adj[c] || []) {
+    for (const n of ADJ[c] || []) {
       if (seen.has(n)) continue;
-      if (n === to) return d + 1;
+      if (n === b) return d + 1;
       seen.add(n);
       q.push([n, d + 1]);
     }
@@ -112,240 +54,194 @@ function hopDistance(from, to) {
   return 99;
 }
 
-function nearestMissingDist(player, city) {
-  const missing = missingTicketCities(player);
-  if (!missing.length) return 50;
-  let best = 99;
-  for (const m of missing) {
-    best = Math.min(best, hopDistance(city, m.city));
+function nextHop(from, to) {
+  if (from === to) return null;
+  const parent = { [from]: null };
+  const q = [from];
+  while (q.length) {
+    const c = q.shift();
+    for (const n of ADJ[c] || []) {
+      if (parent[n] !== undefined) continue;
+      parent[n] = c;
+      if (n === to) {
+        let x = to;
+        while (parent[x] !== from && parent[x] != null) x = parent[x];
+        return x;
+      }
+      q.push(n);
+    }
   }
-  return best;
+  return null;
 }
 
-/**
- * All itineraries to dest with cost, whether affordable or not.
- */
-function flightsToward(player, dest) {
-  const opts = listFlightOptions(player.city).filter((o) => o.to === dest);
+const sum = (o) => Object.values(o || {}).reduce((a, b) => a + (b || 0), 0);
+
+function fCost(p, base) {
+  let c = Math.floor(base * ((p.turn && p.turn.flightMult) || 1));
+  if (p.character.special === 'cheap_flight' && !(p.turn && p.turn.flightsThisTurn)) {
+    c = Math.floor(c * 0.9);
+  }
+  return c;
+}
+
+function hCost(p, h) {
+  if (p.turn && p.turn.freeNightAvailable) return 0;
+  return Math.floor(
+    h.cost *
+      ((p.turn && p.turn.hotelMult) || 1) *
+      (GAME_CONFIG.hotelCostMultiplier || 1)
+  );
+}
+
+function hVp(p, h, cityId) {
+  let vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
+  if (p.character.special === 'family_nights') vp += 2;
+  if (!(p._hotelCities && p._hotelCities.has(cityId))) vp += 1;
+  vp += (p.turn && p.turn.hotelVpBonus) || 0;
+  return vp;
+}
+
+function gaps(p) {
   const out = [];
-  for (const o of opts) {
-    for (const air of o.airlines) {
-      const cost = flightCost(player, o.baseCost);
-      const bal = player.airlines[air] || 0;
-      out.push({
-        to: o.to,
-        via: o.via,
-        airline: air,
-        cost,
-        stops: o.stops,
-        affordable: bal >= cost,
-        shortfall: Math.max(0, cost - bal),
-      });
-    }
+  for (const t of p.tickets) {
+    const need = [];
+    if (!p.visited.has(t.from)) need.push(t.from);
+    if (!p.visited.has(t.to)) need.push(t.to);
+    for (const city of need) out.push({ city, t, vp: t.points, rem: need.length });
   }
   out.sort(
     (a, b) =>
-      (a.affordable === b.affordable ? 0 : a.affordable ? -1 : 1) ||
-      a.cost - b.cost ||
-      a.stops - b.stops
+      a.rem - b.rem || b.vp - a.vp || hops(p.city, a.city) - hops(p.city, b.city)
   );
   return out;
 }
 
-function allAffordableFlights(player) {
-  const opts = listFlightOptions(player.city);
-  const out = [];
-  for (const o of opts) {
+function flightsTo(p, dest) {
+  const rows = [];
+  for (const o of listFlightOptions(p.city)) {
+    if (o.to !== dest) continue;
     for (const air of o.airlines) {
-      const cost = flightCost(player, o.baseCost);
-      if ((player.airlines[air] || 0) >= cost) {
-        out.push({
-          to: o.to,
-          via: o.via,
-          airline: air,
-          cost,
-          stops: o.stops,
-        });
+      const cost = fCost(p, o.baseCost);
+      const bal = p.airlines[air] || 0;
+      rows.push({
+        to: o.to,
+        via: o.via,
+        air,
+        cost,
+        ok: bal >= cost,
+        need: Math.max(0, cost - bal),
+      });
+    }
+  }
+  rows.sort((a, b) => (a.ok === b.ok ? 0 : a.ok ? -1 : 1) || a.cost - b.cost);
+  return rows;
+}
+
+function anyFly(p) {
+  const rows = [];
+  for (const o of listFlightOptions(p.city)) {
+    for (const air of o.airlines) {
+      const cost = fCost(p, o.baseCost);
+      if ((p.airlines[air] || 0) >= cost) {
+        rows.push({ to: o.to, via: o.via, air, cost });
       }
     }
   }
-  return out;
+  return rows;
 }
 
-function bestHotelStay(player) {
-  const city = CITIES[player.city];
-  if (!city || !city.hotels) return null;
-  const costMult =
-    ((player.turn && player.turn.hotelMult) || 1) *
-    (GAME_CONFIG.hotelCostMultiplier || 1);
-  const vpMult = GAME_CONFIG.hotelVpMultiplier || 1;
-  const free = player.turn && player.turn.freeNightAvailable;
+function bestStay(p) {
+  const city = CITIES[p.city];
+  if (!city) return null;
   let best = null;
-  for (const h of city.hotels) {
-    if (player.stayedHotels.has(h.id)) continue;
-    const cost = free ? 0 : Math.floor(h.cost * costMult);
-    const bal = player.hotels[h.brand] || 0;
-    const canPay = bal >= cost;
-    const vp =
-      Math.round((h.vp || 2) * vpMult) +
-      (player.character.special === 'family_nights' ? 2 : 0) +
-      1; // city bonus estimate
-    const score = !canPay
-      ? -1
-      : free
-        ? vp + 20
-        : vp * 1000 / Math.max(cost, 1);
-    if (canPay && (!best || score > best.score)) {
-      best = {
-        hotelId: h.id,
-        brand: h.brand,
-        cost,
-        vp,
-        score,
-        name: h.name,
-        shortfall: 0,
-      };
-    } else if (!canPay && cost > 0) {
-      const shortfall = cost - bal;
-      // track best unaffordable for transfer planning
-      if (!best || best.score < 0) {
-        const need = { hotelId: h.id, brand: h.brand, cost, vp, score: -1, name: h.name, shortfall };
-        if (!best || shortfall < best.shortfall) best = need;
-      }
+  for (const h of city.hotels || []) {
+    if (p.stayedHotels.has(h.id)) continue;
+    const cost = hCost(p, h);
+    if ((p.hotels[h.brand] || 0) < cost) continue;
+    const vp = hVp(p, h, city.id);
+    // Prefer higher VP; break ties with lower cost (hyatt over hilton)
+    if (
+      !best ||
+      vp > best.vp ||
+      (vp === best.vp && cost < best.cost)
+    ) {
+      best = { id: h.id, brand: h.brand, cost, vp, name: h.name };
     }
   }
   return best;
 }
 
-/** Find bank→airline transfer that can fund shortfall miles */
-function planAirlineTransfer(player, airline, shortfall) {
-  const need = Math.max(1000, Math.ceil(shortfall / 1000) * 1000);
-  // Prefer transfer bonus
-  const bonus = player.turn && player.turn.transferBonus;
-  const banks = richestBanks(player);
-  // Sort: bonus partner bank first, then character prefs
-  banks.sort((a, b) => {
-    const aCan = (BANK_TO_AIRLINE[a.bank] || []).includes(airline);
-    const bCan = (BANK_TO_AIRLINE[b.bank] || []).includes(airline);
-    if (aCan !== bCan) return aCan ? -1 : 1;
-    if (bonus && bonus.partner === airline) {
-      // prefer banks that transfer to bonus partner
+function bookableStays(p) {
+  const out = [];
+  for (const city of Object.values(CITIES)) {
+    for (const h of city.hotels || []) {
+      if (p.stayedHotels.has(h.id)) continue;
+      const cost = hCost(p, h);
+      if ((p.hotels[h.brand] || 0) < cost) continue;
+      out.push({
+        city: city.id,
+        id: h.id,
+        brand: h.brand,
+        cost,
+        vp: hVp(p, h, city.id),
+        name: h.name,
+        dist: hops(p.city, city.id),
+      });
     }
-    // consultant prefers chase→united
-    if (player.character.special === 'travel_focus') {
-      if (a.bank === 'chase' && airline === 'united') return -1;
-      if (b.bank === 'chase' && airline === 'united') return 1;
-    }
-    return b.amount - a.amount;
-  });
+  }
+  out.sort((a, b) => b.vp - a.vp || a.dist - b.dist || a.cost - b.cost);
+  return out;
+}
 
-  for (const { bank, amount } of banks) {
+function bankList(p) {
+  return Object.entries(p.banks)
+    .filter(([, v]) => v >= 1000)
+    .sort((a, b) => b[1] - a[1])
+    .map(([bank, amount]) => ({ bank, amount }));
+}
+
+function makeXfer(p, kind, specific, minAmt = 10000) {
+  const bonus = p.turn && p.turn.transferBonus;
+  for (const { bank, amount } of bankList(p)) {
     const partners = TRANSFERS[bank];
-    if (!partners || !partners[airline]) continue;
-    // Transfer enough for shortfall, or dump most of bank for fuel
-    let amt = Math.min(amount, Math.max(need, Math.floor(amount * 0.85)));
-    amt = Math.floor(amt / 1000) * 1000;
-    if (amt < 1000) continue;
-    return { bank, partner: airline, amount: amt };
-  }
-  return null;
-}
+    if (!partners) continue;
 
-function planHotelTransfer(player, brand, shortfall) {
-  const need = Math.max(1000, Math.ceil(shortfall / 1000) * 1000);
-  const bonus = player.turn && player.turn.transferBonus;
-  for (const { bank, amount } of richestBanks(player)) {
-    const partners = TRANSFERS[bank];
-    if (!partners || !partners[brand]) continue;
-    // Prefer hyatt; honor transfer bonus
-    let amt = Math.min(amount, Math.max(need, Math.floor(amount * 0.85)));
-    amt = Math.floor(amt / 1000) * 1000;
-    if (amt < 1000) continue;
-    if (bonus && bonus.partner === brand) {
-      return { bank, partner: brand, amount: amt };
+    let partner = null;
+    // If a specific partner is required, this bank must support it (no silent fallback)
+    if (specific) {
+      if (!partners[specific]) continue;
+      partner = specific;
+    } else if (bonus && partners[bonus.partner]) {
+      if (!kind || partners[bonus.partner].type === kind) partner = bonus.partner;
     }
-    return { bank, partner: brand, amount: amt };
-  }
-  // Any hotel partner from richest bank
-  for (const { bank, amount } of richestBanks(player)) {
-    const hotels = BANK_TO_HOTEL[bank] || [];
-    if (!hotels.length) continue;
-    let partner = hotels.includes('hyatt') ? 'hyatt' : hotels[0];
-    if (bonus && hotels.includes(bonus.partner)) partner = bonus.partner;
-    let amt = Math.floor(Math.min(amount, Math.max(need, amount * 0.85)) / 1000) * 1000;
-    if (amt < 1000) continue;
-    return { bank, partner, amount: amt };
-  }
-  return null;
-}
-
-/** Dump bank points into most useful partner */
-function dumpBankTransfer(player) {
-  const banks = richestBanks(player);
-  if (!banks.length) return null;
-  const bonus = player.turn && player.turn.transferBonus;
-  const { bank, amount } = banks[0];
-  const partners = TRANSFERS[bank];
-  if (!partners) return null;
-
-  const missing = missingTicketCities(player);
-  const wantAirline =
-    missing.length > 0 || totalAirline(player) < 15000 || player.tickets.length > 0;
-
-  let partner = null;
-  if (bonus && partners[bonus.partner]) {
-    partner = bonus.partner;
-  } else if (wantAirline) {
-    const airs = BANK_TO_AIRLINE[bank] || [];
-    partner = airs[0] || Object.keys(partners)[0];
-    // Consultant → united
-    if (player.character.special === 'travel_focus' && partners.united) {
-      partner = 'united';
+    if (!partner && kind === 'airline') {
+      if (p.character.special === 'travel_focus' && partners.united) partner = 'united';
+      else {
+        partner =
+          (partners.united && 'united') ||
+          (partners.delta && 'delta') ||
+          (partners.american && 'american') ||
+          null;
+      }
     }
-  } else {
-    const hotels = BANK_TO_HOTEL[bank] || [];
-    partner = hotels.includes('hyatt')
-      ? 'hyatt'
-      : hotels[0] || Object.keys(partners)[0];
-  }
+    if (!partner && kind === 'hotel') {
+      partner =
+        (partners.hyatt && 'hyatt') ||
+        (partners.marriott && 'marriott') ||
+        (partners.hilton && 'hilton') ||
+        null;
+    }
+    if (!partner || !partners[partner]) continue;
 
-  if (!partner || !partners[partner]) {
-    partner = Object.keys(partners)[0];
-  }
-  // Dump nearly everything (leave <1k)
-  let amt = Math.floor(amount / 1000) * 1000;
-  if (amt < 1000) return null;
-  return { bank, partner, amount: amt };
-}
-
-function pickCard(game, player) {
-  if (player.cards.length >= game.cardLimit(player)) return null;
-  // Only open cards in early-mid game, or if still on starter only
-  if (game.round > 6 && player.cards.length >= 2) return null;
-  const held = new Set(player.cards.map((c) => c.id));
-  const prefs = CARD_PREFS[player.character.id] || ['csp', 'amex_gold', 'cfu'];
-  for (const id of prefs) {
-    if (held.has(id)) continue;
-    if (CREDIT_CARDS.some((c) => c.id === id)) return id;
-  }
-  for (const c of CREDIT_CARDS) {
-    if (!held.has(c.id) && c.signupBonus >= 8000) return c.id;
+    let amt = Math.min(amount, Math.max(minAmt, Math.floor(amount * 0.7)));
+    if (bonus && partner === bonus.partner) amt = Math.floor(amount / 1000) * 1000;
+    amt = Math.floor(amt / 1000) * 1000;
+    if (amt >= 1000) return { bank, partner, amount: amt };
   }
   return null;
 }
 
-function expectedIncome(game, player, alloc) {
-  let total = 0;
-  for (const [cat, spend] of Object.entries(alloc || {})) {
-    if (!spend) continue;
-    const { rate } = game.bestEarnRate(player, cat);
-    total += Math.floor(spend * rate);
-  }
-  return total;
-}
-
-/** Best single-category dump for income estimate */
-function bestCategoryEarn(game, player) {
+function incomeAlloc(game, p) {
   const cats = [
     'dining',
     'groceries',
@@ -357,321 +253,259 @@ function bestCategoryEarn(game, player) {
     'flights',
     'everything',
   ];
-  let best = 0;
-  for (const cat of cats) {
-    const { rate } = game.bestEarnRate(player, cat);
-    best = Math.max(best, Math.floor(GAME_CONFIG.budgetPerTurn * rate));
+  let best = 'everything';
+  let br = 0;
+  for (const c of cats) {
+    const r = game.bestEarnRate(p, c).rate;
+    if (r > br) {
+      br = r;
+      best = c;
+    }
   }
-  return best;
+  if (p.character.special === 'dining_bonus') {
+    const dr = game.bestEarnRate(p, 'dining').rate;
+    if (dr > 0 && best !== 'dining') return { dining: 4000, [best]: 1000 };
+    if (dr > 0) return { dining: GAME_CONFIG.budgetPerTurn };
+  }
+  return { [best]: GAME_CONFIG.budgetPerTurn };
 }
 
-// ——— action selection ———
-
-function tryFly(game, flight) {
-  game.bookFlight(flight.to, flight.airline, flight.via || null);
-  return `flies to ${flight.to}${flight.via ? ` via ${flight.via}` : ''} on ${flight.airline}`;
+function keepTickets(p, pending, round) {
+  const score = (t) =>
+    t.points +
+    (p.visited.has(t.from) ? 45 : 0) +
+    (p.visited.has(t.to) ? 45 : 0) +
+    (t.from === p.city || t.to === p.city ? 20 : 0) +
+    Math.max(0, 14 - hops(t.from, t.to) * 4);
+  const ranked = [...pending].sort((a, b) => score(b) - score(a));
+  const keep = [ranked[0].id];
+  if (ranked[1]) {
+    const t = ranked[1];
+    if (
+      p.visited.has(t.from) ||
+      p.visited.has(t.to) ||
+      hops(t.from, t.to) <= 2 ||
+      (round <= 3 && t.points >= 14)
+    ) {
+      keep.push(t.id);
+    }
+  }
+  return keep;
 }
 
-function tryTransfer(game, xfer) {
-  game.transferPoints(xfer.bank, xfer.partner, xfer.amount);
-  return `transfers ${xfer.amount.toLocaleString()} ${xfer.bank} → ${xfer.partner}`;
-}
-
-function doOneAction(game, player) {
-  // Pending ticket keep
-  if (player.turn.pendingTickets && player.turn.pendingTickets.length) {
-    const sorted = [...player.turn.pendingTickets].sort(
-      (a, b) => b.points - a.points
-    );
-    // Keep all if ≤2 and good; else keep best 1–2
-    const keep = sorted.slice(0, Math.min(2, sorted.length)).map((t) => t.id);
-    game.resolveTicketDraw(keep);
-    return `keeps trip ticket(s)`;
-  }
-
-  const missing = missingTicketCities(player);
-  const round = game.round || 1;
-
-  // A) Free night hotel
-  if (player.turn.freeNightAvailable) {
-    const stay = bestHotelStay(player);
-    if (stay && stay.score > 0) {
-      game.bookHotel(stay.hotelId);
-      return `free night at ${stay.name}`;
-    }
-  }
-
-  // B) Fly to complete / progress tickets if affordable
-  for (const m of missing) {
-    if (m.city === player.city) continue;
-    const options = flightsToward(player, m.city);
-    const aff = options.find((o) => o.affordable);
-    if (aff) {
-      try {
-        return tryFly(game, aff) + ` (ticket ${m.ticket.from}→${m.ticket.to})`;
-      } catch (e) {
-        /* continue */
-      }
-    }
-  }
-
-  // C) Transfer to fund a ticket flight, then next action flies
-  for (const m of missing) {
-    if (m.city === player.city) continue;
-    const options = flightsToward(player, m.city);
-    for (const o of options.slice(0, 6)) {
-      if (o.affordable) continue;
-      const xfer = planAirlineTransfer(player, o.airline, o.shortfall);
-      if (xfer) {
-        try {
-          return tryTransfer(game, xfer) + ` (fuel for ${m.city})`;
-        } catch (e) {
-          /* try next */
-        }
-      }
-    }
-  }
-
-  // D) Step toward ticket city (affordable flight that reduces hop distance)
-  if (missing.length) {
-    const flights = allAffordableFlights(player);
-    const hereDist = nearestMissingDist(player, player.city);
-    flights.sort((a, b) => {
-      const da = nearestMissingDist(player, a.to);
-      const db = nearestMissingDist(player, b.to);
-      // Prefer reducing distance; bonus if destination is missing ticket city
-      const aTicket = missing.some((m) => m.city === a.to) ? -5 : 0;
-      const bTicket = missing.some((m) => m.city === b.to) ? -5 : 0;
-      return da + aTicket - (db + bTicket) || a.cost - b.cost;
-    });
-    for (const f of flights) {
-      const d = nearestMissingDist(player, f.to);
-      if (d < hereDist || missing.some((m) => m.city === f.to)) {
-        try {
-          return tryFly(game, f) + ' (toward tickets)';
-        } catch (e) {
-          /* continue */
-        }
-      }
-    }
-  }
-
-  // E) Hotel for VP when we can pay
-  {
-    const stay = bestHotelStay(player);
-    if (stay && stay.score > 0 && (stay.vp >= 5 || stay.cost === 0 || round >= 4)) {
-      try {
-        game.bookHotel(stay.hotelId);
-        return `stays at ${stay.name} (~${stay.vp} VP)`;
-      } catch (e) {
-        /* continue */
-      }
-    }
-  }
-
-  // F) Transfer for hotel if we have bank and can't stay
-  {
-    const stay = bestHotelStay(player);
-    if (stay && stay.shortfall > 0 && totalBank(player) >= 1000) {
-      const xfer = planHotelTransfer(player, stay.brand, stay.shortfall);
-      if (xfer) {
-        try {
-          return tryTransfer(game, xfer) + ' (hotel points)';
-        } catch (e) {
-          /* continue */
-        }
-      }
-    }
-  }
-
-  // G) Early card (max 1 extra in first 4 rounds if only starter)
-  if (
-    player.cards.length < game.cardLimit(player) &&
-    (player.cards.length === 1 && round <= 5)
-  ) {
-    const cardId = pickCard(game, player);
-    if (cardId) {
-      try {
-        const def = game.applyForCard(cardId);
-        return `applies for ${def.name}`;
-      } catch (e) {
-        /* continue */
-      }
-    }
-  }
-
-  // H) Dump bank → miles if we have tickets or low miles
-  if (totalBank(player) >= 1000 && (missing.length || totalAirline(player) < 20000 || round >= 3)) {
-    const xfer = dumpBankTransfer(player);
-    if (xfer) {
-      try {
-        return tryTransfer(game, xfer);
-      } catch (e) {
-        /* continue */
-      }
-    }
-  }
-
-  // I) Any flight to unvisited city (coverage / cities VP)
-  {
-    const flights = allAffordableFlights(player);
-    flights.sort((a, b) => {
-      const av = player.visited.has(a.to) ? 1 : 0;
-      const bv = player.visited.has(b.to) ? 1 : 0;
-      return av - bv || a.cost - b.cost;
-    });
-    if (flights.length) {
-      try {
-        return tryFly(game, flights[0]);
-      } catch (e) {
-        /* continue */
-      }
-    }
-  }
-
-  // J) Transfer remaining bank even without clear goal (leftover VP is weak)
-  if (totalBank(player) >= 1000) {
-    const xfer = dumpBankTransfer(player);
-    if (xfer) {
-      try {
-        return tryTransfer(game, xfer);
-      } catch (e) {
-        /* continue */
-      }
-    }
-  }
-
-  // K) Hotel any affordable
-  {
-    const stay = bestHotelStay(player);
-    if (stay && stay.score > 0) {
-      try {
-        game.bookHotel(stay.hotelId);
-        return `stays at ${stay.name}`;
-      } catch (e) {
-        /* continue */
-      }
-    }
-  }
-
-  // L) Draw tickets if we finished ours or have few
-  if (player.tickets.length < 2 && round >= 2) {
-    try {
-      game.drawTickets();
-      if (player.turn.pendingTickets && player.turn.pendingTickets.length) {
-        const sorted = [...player.turn.pendingTickets].sort(
-          (a, b) => b.points - a.points
-        );
-        const keep = sorted.slice(0, Math.min(2, sorted.length)).map((t) => t.id);
-        game.resolveTicketDraw(keep);
-        return `draws trip tickets`;
-      }
-    } catch (e) {
-      /* continue */
-    }
-  }
-
-  // M) Second card if still room mid-game
-  if (player.cards.length < game.cardLimit(player) && round <= 7) {
-    const cardId = pickCard(game, player);
-    if (cardId) {
-      try {
-        const def = game.applyForCard(cardId);
-        return `applies for ${def.name}`;
-      } catch (e) {
-        /* continue */
-      }
-    }
-  }
-
-  // N) Rest only if truly stuck
+function ok(fn) {
   try {
-    game.restPlan();
-    return `rests / plans`;
+    fn();
+    return true;
   } catch (e) {
-    return null;
+    return false;
   }
 }
 
-/**
- * Play full bot turn (income + all actions). Does not end turn.
- */
+function doOneAction(game, p) {
+  if (p.turn.pendingTickets && p.turn.pendingTickets.length) {
+    game.resolveTicketDraw(keepTickets(p, p.turn.pendingTickets, game.round || 1));
+    return 'keeps tickets';
+  }
+
+  const round = game.round || 1;
+  const g = gaps(p);
+  const stay = bestStay(p);
+  const air = sum(p.airlines);
+  const hot = sum(p.hotels);
+  const bank = sum(p.banks);
+  const stays = bookableStays(p);
+  const late = round >= 7;
+
+  // A) Upgrade card early (round 1–3, still on starter)
+  if (p.cards.length === 1 && round <= 3) {
+    const held = new Set(p.cards.map((c) => c.id));
+    for (const id of CARD_PREFS[p.character.id] || []) {
+      if (!held.has(id) && ok(() => game.applyForCard(id))) return `card ${id}`;
+    }
+  }
+
+  // B) Finish ticket (1 city left)
+  for (const x of g) {
+    if (x.rem !== 1 || x.city === p.city) continue;
+    const f = flightsTo(p, x.city).find((f) => f.ok);
+    if (f && ok(() => game.bookFlight(f.to, f.air, f.via || null))) {
+      return `FINISH ${f.to} +${x.vp}`;
+    }
+  }
+  for (const x of g) {
+    if (x.rem !== 1 || x.city === p.city) continue;
+    for (const f of flightsTo(p, x.city).slice(0, 6)) {
+      if (f.ok) continue;
+      const plan = makeXfer(p, 'airline', f.air, Math.max(10000, f.need));
+      if (plan && ok(() => game.transferPoints(plan.bank, plan.partner, plan.amount))) {
+        return `fuel FINISH`;
+      }
+    }
+  }
+
+  // C) Hotel here — main VP engine
+  if (stay && ok(() => game.bookHotel(stay.id))) {
+    return `hotel ${stay.name} +${stay.vp}`;
+  }
+
+  // D) Ticket progress (avoid open-ticket penalties)
+  for (const x of g) {
+    if (x.city === p.city) continue;
+    const f = flightsTo(p, x.city).find((f) => f.ok);
+    if (f && ok(() => game.bookFlight(f.to, f.air, f.via || null))) {
+      return `ticket ${f.to}`;
+    }
+  }
+  // Fuel + hop for tickets (limit churn: only top 2 gaps)
+  for (const x of g.slice(0, 2)) {
+    if (x.city === p.city) continue;
+    for (const f of flightsTo(p, x.city).slice(0, 4)) {
+      if (f.ok) continue;
+      const plan = makeXfer(p, 'airline', f.air, Math.max(10000, f.need));
+      if (plan && ok(() => game.transferPoints(plan.bank, plan.partner, plan.amount))) {
+        return `fuel ticket`;
+      }
+    }
+    const hop = nextHop(p.city, x.city);
+    if (hop) {
+      const f = flightsTo(p, hop).find((f) => f.ok);
+      if (f && ok(() => game.bookFlight(f.to, f.air, f.via || null))) return `hop ${hop}`;
+      for (const fl of flightsTo(p, hop).slice(0, 3)) {
+        if (fl.ok) continue;
+        const plan = makeXfer(p, 'airline', fl.air, Math.max(8000, fl.need));
+        if (plan && ok(() => game.transferPoints(plan.bank, plan.partner, plan.amount))) {
+          return `fuel hop`;
+        }
+      }
+    }
+  }
+
+  // E) Hotel tour — spend hotel pts (need miles)
+  for (const h of stays) {
+    if (h.city === p.city) continue;
+    const f = flightsTo(p, h.city).find((f) => f.ok);
+    if (f && ok(() => game.bookFlight(f.to, f.air, f.via || null))) {
+      return `→hotel ${h.city}`;
+    }
+  }
+  if (stays.length && stays[0].city !== p.city) {
+    const hop = nextHop(p.city, stays[0].city);
+    if (hop) {
+      const f = flightsTo(p, hop).find((f) => f.ok);
+      if (f && ok(() => game.bookFlight(f.to, f.air, f.via || null))) return `hop hotel`;
+    }
+  }
+  if (stays.length && air < 12000 && bank >= 1000) {
+    const plan = makeXfer(p, 'airline', null, 12000);
+    if (plan && ok(() => game.transferPoints(plan.bank, plan.partner, plan.amount))) {
+      return `fuel hotel tour`;
+    }
+  }
+
+  // F) Stock portfolio
+  if (bank >= 1000) {
+    let plan = null;
+    if (p.turn && p.turn.transferBonus) {
+      plan = makeXfer(p, null, p.turn.transferBonus.partner, 10000);
+    }
+    // Keep hotels funded for stays — but not when we have zero miles to tour
+    if (!plan && hot < 20000 && (air >= 8000 || !g.length)) {
+      plan = makeXfer(p, 'hotel', 'hyatt', 12000) || makeXfer(p, 'hotel', null, 10000);
+    }
+    if (!plan && (air < 15000 || g.length)) {
+      plan = makeXfer(p, 'airline', null, 12000);
+    }
+    if (!plan) {
+      const hotEff =
+        (p.hotels.hyatt || 0) +
+        (p.hotels.marriott || 0) +
+        (p.hotels.hilton || 0) * 0.4;
+      plan =
+        hotEff < air
+          ? makeXfer(p, 'hotel', null, 10000)
+          : makeXfer(p, 'airline', null, 10000);
+    }
+    if (plan && ok(() => game.transferPoints(plan.bank, plan.partner, plan.amount))) {
+      return `xfer→${plan.partner}`;
+    }
+  }
+
+  // G) Burn miles productively
+  {
+    const hc = new Set(stays.map((s) => s.city));
+    const tc = new Set(g.map((x) => x.city));
+    const flights = anyFly(p).sort((a, b) => {
+      const sc = (f) =>
+        (tc.has(f.to) ? 50 : 0) +
+        (hc.has(f.to) ? 45 : 0) +
+        (p.visited.has(f.to) ? 0 : 10) -
+        f.cost / 5000;
+      return sc(b) - sc(a);
+    });
+    for (const f of flights.slice(0, 18)) {
+      if (ok(() => game.bookFlight(f.to, f.air, f.via || null))) return `fly ${f.to}`;
+    }
+  }
+
+  // H) Tickets draw
+  if (p.tickets.length === 0 && round >= 2 && round <= 6) {
+    if (
+      ok(() => {
+        game.drawTickets();
+        if (p.turn.pendingTickets) {
+          game.resolveTicketDraw(keepTickets(p, p.turn.pendingTickets, round));
+        }
+      })
+    ) {
+      return 'draw tickets';
+    }
+  }
+
+  // I) Late dump to hotels then miles
+  if (bank >= 1000) {
+    const plan = makeXfer(
+      p,
+      late || hot < 25000 ? 'hotel' : 'airline',
+      null,
+      8000
+    );
+    if (plan && ok(() => game.transferPoints(plan.bank, plan.partner, plan.amount))) {
+      return `dump→${plan.partner}`;
+    }
+  }
+
+  if (ok(() => game.restPlan())) return 'rest';
+  return null;
+}
+
 export function playBotActions(game) {
   const p = game.currentPlayer;
   const logs = [];
   if (!p.isBot) return { logs };
 
-  // Income: re-roll if roll is weak vs best category
   if (!p.turn.incomeDone) {
-    let alloc = game.autoAllocate(p);
-    let exp = expectedIncome(game, p, alloc);
-    const ceiling = bestCategoryEarn(game, p);
-    if (
-      p.cards.length &&
-      (p.turn.spendRerollsLeft || 0) > 0 &&
-      ceiling > 0 &&
-      exp < ceiling * 0.45
-    ) {
-      try {
-        game.rerollSpend();
-        alloc = game.autoAllocate(p);
-        exp = expectedIncome(game, p, alloc);
-        logs.push(`${p.name} re-rolls for better spend categories`);
-      } catch (e) {
-        /* ignore */
-      }
-    }
-    // If still weak, optionally force allocate budget to best earn categories
-    if (p.cards.length && exp < ceiling * 0.5) {
-      const cats = [
-        'dining',
-        'groceries',
-        'gas',
-        'travel',
-        'transit',
-        'rent',
-        'hotels',
-        'flights',
-        'everything',
-      ];
-      let bestCat = 'everything';
-      let bestRate = 0;
-      for (const cat of cats) {
-        const { rate } = game.bestEarnRate(p, cat);
-        if (rate > bestRate) {
-          bestRate = rate;
-          bestCat = cat;
-        }
-      }
-      if (bestRate > 0) {
-        alloc = { [bestCat]: GAME_CONFIG.budgetPerTurn };
-        logs.push(`${p.name} redirects spend to ${bestCat} (${bestRate}×)`);
-      }
-    }
-    const result = game.doIncome(alloc);
-    logs.push(`${p.name} earns ~${result.totalEarned.toLocaleString()} pts`);
+    const r = game.doIncome(incomeAlloc(game, p));
+    logs.push(`${p.name} +${r.totalEarned.toLocaleString()}`);
   }
 
-  let safety = 0;
-  while (p.turn.actionsLeft > 0 && safety++ < 12) {
+  let n = 0;
+  while (p.turn.actionsLeft > 0 && n++ < 14) {
     if (p.turn.pendingTickets && p.turn.pendingTickets.length) {
-      const sorted = [...p.turn.pendingTickets].sort(
-        (a, b) => b.points - a.points
-      );
-      const keep = sorted.slice(0, Math.min(2, sorted.length)).map((t) => t.id);
       try {
-        game.resolveTicketDraw(keep);
-        logs.push(`${p.name} keeps trip ticket(s)`);
+        game.resolveTicketDraw(
+          keepTickets(p, p.turn.pendingTickets, game.round || 1)
+        );
+        logs.push(`${p.name} keeps tickets`);
       } catch (e) {
         break;
       }
       continue;
     }
-    const desc = doOneAction(game, p);
-    if (!desc) break;
-    logs.push(`${p.name} ${desc}`);
+    const label = doOneAction(game, p);
+    if (!label) break;
+    logs.push(`${p.name} ${label}`);
   }
-
   return { logs };
 }
 
