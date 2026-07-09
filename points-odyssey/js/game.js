@@ -556,7 +556,7 @@ export class Game {
       `${p.name} flies ${pathLabel} on ${airline} (${legCount} segment${legCount > 1 ? 's' : ''}) for ${cost.toLocaleString()} miles.`
     );
 
-    this.checkTripTickets(p);
+    const completedTrips = this.checkTripTickets(p);
     this.checkAchievements(p);
     return {
       from,
@@ -565,6 +565,7 @@ export class Game {
       cost,
       segments: legCount,
       itinerary,
+      completedTrips,
     };
   }
 
@@ -710,10 +711,12 @@ export class Game {
 
   checkTripTickets(player) {
     const remaining = [];
+    const newlyCompleted = [];
     for (const t of player.tickets) {
       if (this.canConnect(player, t.from, t.to)) {
         player.vp += t.points;
         player.completedTickets.push(t);
+        newlyCompleted.push(t);
         this.addLog(
           `${player.name} completes trip ${t.from}→${t.to} for ${t.points} VP!`
         );
@@ -728,6 +731,7 @@ export class Game {
       }
     }
     player.tickets = remaining;
+    return newlyCompleted;
   }
 
   checkAchievements(player) {
@@ -897,7 +901,8 @@ export class Game {
         airlines: { ...p.airlines },
         cards: p.cards.map((c) => ({ id: c.id, name: c.name, bank: c.bank })),
         tickets: p.tickets.map((t) => ({ ...t })),
-        completedTickets: p.completedTickets.length,
+        completedTickets: p.completedTickets.map((t) => ({ ...t })),
+        completedTicketCount: p.completedTickets.length,
         segments: p.segments,
         nights: p.nights,
         nightsByBrand: { ...p.nightsByBrand },

@@ -299,18 +299,31 @@ function renderHand(cur, snap) {
         .join('')
     : `<span class="muted">No credit cards yet</span>`;
 
-  // Tickets
-  $('#my-tickets').innerHTML = cur.tickets.length
-    ? cur.tickets
-        .map(
-          (t) =>
-            `<div class="ticket">
-              <strong>${t.from} → ${t.to}</strong>
-              <span>+${t.points} / −${t.penalty}</span>
-            </div>`
-        )
-        .join('')
-    : `<span class="muted">No open trip tickets</span>`;
+  // Tickets — open + completed (completed stay visible, marked done)
+  const openTickets = cur.tickets || [];
+  const doneTickets = cur.completedTickets || [];
+  if (!openTickets.length && !doneTickets.length) {
+    $('#my-tickets').innerHTML = `<span class="muted">No trip tickets yet</span>`;
+  } else {
+    $('#my-tickets').innerHTML = [
+      ...openTickets.map(
+        (t) =>
+          `<div class="ticket open" title="In progress">
+            <span class="ticket-status" aria-label="Open">○</span>
+            <strong>${t.from} → ${t.to}</strong>
+            <span class="ticket-pts">+${t.points} / −${t.penalty}</span>
+          </div>`
+      ),
+      ...doneTickets.map(
+        (t) =>
+          `<div class="ticket completed" title="Completed · +${t.points} VP earned">
+            <span class="ticket-status" aria-label="Completed">✓</span>
+            <strong>${t.from} → ${t.to}</strong>
+            <span class="ticket-pts">+${t.points} VP · done</span>
+          </div>`
+      ),
+    ].join('');
+  }
 
   // Stats
   $('#my-stats').innerHTML = `
@@ -680,11 +693,15 @@ function openFlightModal() {
       const to = sel.dataset.to;
       const via = sel.dataset.via || null;
       const res = game.bookFlight(to, airline, via);
-      toast(
-        res.via
-          ? `Landed in ${res.to} via ${res.via} (+${res.segments} segments)`
-          : `Landed in ${res.to}!`
-      );
+      let msg = res.via
+        ? `Landed in ${res.to} via ${res.via} (+${res.segments} segments)`
+        : `Landed in ${res.to}!`;
+      if (res.completedTrips && res.completedTrips.length) {
+        msg +=
+          ' · Ticket complete: ' +
+          res.completedTrips.map((t) => `${t.from}→${t.to} (+${t.points} VP)`).join(', ');
+      }
+      toast(msg);
     }
   );
 

@@ -524,6 +524,8 @@ button {
 
 .ticket {
   display: flex;
+  align-items: center;
+  gap: 0.4rem;
   justify-content: space-between;
   background: var(--navy);
   border-radius: 6px;
@@ -531,6 +533,48 @@ button {
   margin-bottom: 0.3rem;
   font-size: 0.8rem;
   border: 1px solid var(--border);
+}
+
+.ticket strong {
+  flex: 1;
+}
+
+.ticket-status {
+  flex-shrink: 0;
+  font-weight: 700;
+  width: 1rem;
+  text-align: center;
+  color: var(--cream-dim);
+}
+
+.ticket.open {
+  border-color: rgba(212, 160, 23, 0.35);
+}
+
+.ticket.open .ticket-status {
+  color: var(--gold-soft);
+}
+
+.ticket.completed {
+  border-color: rgba(46, 204, 113, 0.45);
+  background: rgba(46, 204, 113, 0.08);
+  opacity: 0.95;
+}
+
+.ticket.completed strong {
+  text-decoration: line-through;
+  text-decoration-color: rgba(46, 204, 113, 0.55);
+  color: var(--cream-dim);
+}
+
+.ticket.completed .ticket-status {
+  color: var(--ok);
+}
+
+.ticket.completed .ticket-pts {
+  color: var(--ok);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 #my-stats {
