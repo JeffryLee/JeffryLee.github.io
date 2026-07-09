@@ -307,15 +307,15 @@ export class Game {
       throw new Error('Over budget');
     }
 
-    const mults = p.character.multipliers || {};
+    // Spend dollars as allocated — no character spend multipliers.
+    // Earn rates come only from credit cards (default 0× with no card).
     const effective = {};
     for (const [cat, amt] of Object.entries(allocation)) {
       if (!amt) continue;
-      const m = mults[cat] != null ? mults[cat] : (mults.everything != null ? mults.everything : 1);
-      effective[cat] = Math.round(amt * m);
+      effective[cat] = Math.round(amt);
     }
 
-    // Apply event earn mults
+    // Event earn mults (e.g. double dining) scale spend for earn calc only
     for (const [cat, m] of Object.entries(p.turn.earnMults)) {
       if (effective[cat]) effective[cat] = Math.round(effective[cat] * m);
     }
@@ -326,18 +326,19 @@ export class Game {
     for (const [cat, spend] of Object.entries(effective)) {
       if (!spend) continue;
       const { bank, rate, card } = this.bestEarnRate(p, cat);
+      if (!card || rate <= 0) continue; // 0× without a card
+
       let pts = Math.floor(spend * rate);
 
+      let biltMult = p.turn.biltBoost || 1;
+      if (p.character.special === 'rent_day' && bank === 'bilt') {
+        biltMult *= 1.25;
+      }
       if (bank === 'bilt') {
-        pts = Math.floor(pts * p.turn.biltBoost);
+        pts = Math.floor(pts * biltMult);
       }
 
-      // Landlord rent without bilt is weak
-      if (cat === 'rent' && bank !== 'bilt') {
-        pts = Math.floor(pts * 0.25);
-      }
-
-      if (card && card.directAirline) {
+      if (card.directAirline) {
         p.airlines[card.directAirline] =
           (p.airlines[card.directAirline] || 0) + pts;
       } else {
@@ -346,35 +347,44 @@ export class Game {
       }
       totalEarned += pts;
 
-      // Signup progress
-      if (card) {
-        p.cardSpendProgress[card.id] =
-          (p.cardSpendProgress[card.id] || 0) + spend;
-        this.maybeClaimSignup(p, card);
+      p.cardSpendProgress[card.id] =
+        (p.cardSpendProgress[card.id] || 0) + spend;
+      this.maybeClaimSignup(p, card);
+    }
+
+    // Foodie dining bonus (ability, not a spend multiplier)
+    if (
+      p.character.special === 'dining_bonus' &&
+      (allocation.dining || 0) > 0 &&
+      !p.turn.diningBonusUsed
+    ) {
+      const best = this.bestEarnRate(p, 'dining');
+      const bank = best.card ? best.bank : p.cards[0] ? p.cards[0].bank : null;
+      if (bank) {
+        p.banks[bank] = (p.banks[bank] || 0) + 500;
+        totalEarned += 500;
+        p.turn.diningBonusUsed = true;
       }
     }
 
-    // Foodie dining bonus
-    if (
-      p.character.special === 'dining_bonus' &&
-      effective.dining > 0 &&
-      !p.turn.diningBonusUsed
-    ) {
-      const bank = this.bestEarnRate(p, 'dining').bank;
-      p.banks[bank] += 500;
-      totalEarned += 500;
-      p.turn.diningBonusUsed = true;
-    }
-
     p.turn.incomeDone = true;
-    this.addLog(
-      `${p.name} spends and earns ~${totalEarned.toLocaleString()} points.`
-    );
+    if (!p.cards.length) {
+      this.addLog(
+        `${p.name} spends but earns 0 pts (no credit card — apply for one!).`
+      );
+    } else {
+      this.addLog(
+        `${p.name} spends and earns ~${totalEarned.toLocaleString()} points.`
+      );
+    }
     return { totalEarned, earnedByBank, effective };
   }
 
+  /**
+   * Best card earn rate for a category. Default: 0× (no free character bonus).
+   */
   bestEarnRate(player, category) {
-    let best = { bank: 'chase', rate: 0.5, card: null }; // no-card baseline
+    let best = { bank: null, rate: 0, card: null };
     if (!player.cards.length) return best;
 
     for (const c of player.cards) {
@@ -384,7 +394,7 @@ export class Game {
           ? def.earn[category]
           : def.earn.everything != null
             ? def.earn.everything
-            : 1;
+            : 0;
       if (rate > best.rate) {
         best = { bank: def.bank, rate, card: def };
       }
@@ -405,23 +415,47 @@ export class Game {
     }
   }
 
+  /**
+   * Auto-spend: put budget on categories where held cards earn the most.
+   * With no cards, still allocates to "everything" but earn rate is 0×.
+   */
   autoAllocate(player) {
-    const mults = player.character.multipliers || {};
-    const cats = Object.keys(mults).filter((k) => k !== 'everything');
-    if (!cats.length) {
-      return { everything: GAME_CONFIG.budgetPerTurn };
+    const budget = GAME_CONFIG.budgetPerTurn;
+    const cats = [
+      'dining',
+      'groceries',
+      'gas',
+      'travel',
+      'transit',
+      'rent',
+      'hotels',
+      'flights',
+      'everything',
+    ];
+    if (!player.cards.length) {
+      return { everything: budget };
     }
-    // Weight by multiplier
-    const weights = cats.map((c) => ({ c, w: mults[c] }));
-    const sumW = weights.reduce((s, x) => s + x.w, 0);
+
+    const scored = cats
+      .map((cat) => ({ cat, rate: this.bestEarnRate(player, cat).rate }))
+      .filter((x) => x.rate > 0)
+      .sort((a, b) => b.rate - a.rate);
+
+    if (!scored.length) {
+      return { everything: budget };
+    }
+
+    // Dump all spend into the best-earning category (ties split evenly)
+    const bestRate = scored[0].rate;
+    const tops = scored.filter((x) => x.rate === bestRate);
     const alloc = {};
-    let left = GAME_CONFIG.budgetPerTurn;
-    weights.forEach((x, i) => {
-      if (i === weights.length - 1) {
-        alloc[x.c] = left;
+    let left = budget;
+    tops.forEach((x, i) => {
+      if (i === tops.length - 1) {
+        alloc[x.cat] = left;
       } else {
-        const amt = Math.floor((GAME_CONFIG.budgetPerTurn * x.w) / sumW);
-        alloc[x.c] = amt;
+        const amt = Math.floor(budget / tops.length);
+        alloc[x.cat] = amt;
         left -= amt;
       }
     });
@@ -482,6 +516,12 @@ export class Game {
         `Transfer bonus applied (+${Math.round(p.turn.transferBonus.bonus * 100)}%)!`
       );
       p.turn.transferBonus = null;
+    }
+
+    // Consultant: +10% on United transfers
+    if (p.character.special === 'travel_focus' && partner === 'united') {
+      out = Math.floor(out * 1.1);
+      this.addLog(`${p.name}'s Consultant skill: +10% United transfer.`);
     }
 
     p.banks[bank] -= amount;

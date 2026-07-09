@@ -45,20 +45,20 @@ Game systems are **inspired by** real US transfer ecosystems (Chase Ultimate Rew
 
 ---
 
-## Characters (Spending Structures)
+## Characters (special skills only)
 
-Each character multiplies category spend during the **Income** step. Multipliers apply to that character’s base budget allocation.
+Characters do **not** grant spend multipliers. **Earn rates come only from credit cards.** Without a card, earn rate is **0× on everything**.
 
-| Character | Theme | Spend multipliers | Special |
-|-----------|-------|-------------------|---------|
-| **The Consultant** | Business travel | Travel 3×, Dining 2×, Everything 1× | Starts with free Chase Sapphire–style card slot open |
-| **The Family** | Household life | Groceries 3×, Gas 2×, Everything 1× | +1 bonus VP on every hotel stay |
-| **The Nomad** | Remote work | Travel 2×, Transit 3×, Everything 1× | First flight each turn costs 10% fewer miles |
-| **The Foodie** | Culinary | Dining 4×, Groceries 2×, Everything 1× | Dining spend earns +500 bonus bank points once per turn |
-| **The Landlord** | Real estate | Rent 5×, Everything 1× | Only character who efficiently uses **Bilt**; Rent Day bonus possible |
-| **The Executive** | Premium lifestyle | Flights 3×, Hotels 3×, Dining 2× | Can hold **+1** extra credit card (cap 4 instead of 3) |
+| Character | Theme | Special skill |
+|-----------|-------|---------------|
+| **The Consultant** | Business travel | +10% miles when transferring to United |
+| **The Family** | Household life | +1 bonus VP on every hotel stay |
+| **The Nomad** | Remote work | First flight each turn costs 10% fewer miles |
+| **The Foodie** | Culinary | +500 bank pts once per turn if any dining spend (needs a card for bank) |
+| **The Landlord** | Real estate | Always +25% Bilt earn (stacks with Rent Day events) |
+| **The Executive** | Premium lifestyle | Hold up to **4** credit cards (others cap at 3) |
 
-**Spend categories used in game:** Dining, Groceries, Gas, Travel, Transit, Rent, Hotels, Flights, Everything (catch-all).
+**Spend categories:** Dining, Groceries, Gas, Travel, Transit, Rent, Hotels, Flights, Everything (catch-all). Points earned = dollars spent in category × best card earn rate for that category.
 
 ---
 
@@ -162,10 +162,9 @@ Example events:
 
 ### 2. Income Phase (mandatory)
 
-1. Allocate your **$2,000** budget across spend categories (or use a one-click “auto-spend” preset based on character).
-2. Apply **character multipliers** → **effective spend** per category.
-3. For each dollar of effective spend, earn points on the **best eligible credit card** you hold for that category (highest multiplier wins). If you hold **no cards**, earn **0.5× cashback-equivalent** into a weak “No Card” pool that only converts to Chase at 50% efficiency—or simply earn nothing (digital default: **earn 1 pt per $2** into a starter Chase pot of max 1,000).
-4. Track **signup bonus progress** toward min-spend.
+1. Allocate your **$2,000** budget across spend categories (or auto-spend into your best card categories).
+2. For each dollar spent, earn points on the **best credit card** you hold for that category (highest earn rate). **No card → 0×** (earn nothing).
+3. Track **signup bonus progress** toward min-spend on the card that earned the spend.
 
 ### 3. Action Phase (choose **2 actions**)
 
@@ -275,7 +274,7 @@ Highest total VP wins. Ties → most cities visited → most segments → shared
 ## Digital Implementation Notes
 
 - **Hotseat multiplayer** on localhost: players share one browser and take turns.
-- Auto-spend presets follow character multipliers.
+- Auto-spend presets follow held credit cards’ best earn categories (0× if no cards).
 - Map is interactive SVG/canvas over a stylized US board.
 - Full component data: `js/data.js`. Engine: `js/game.js`. UI: `js/ui.js`.
 

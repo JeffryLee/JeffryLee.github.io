@@ -25,11 +25,8 @@ function fmt(n) {
   return Math.round(n).toLocaleString();
 }
 
-/** Format character spend multipliers + special for tooltips */
+/** Format character special skills for tooltips (no spend multipliers) */
 function characterSkillsHtml(c) {
-  const mults = Object.entries(c.multipliers || {})
-    .map(([k, v]) => `<li><strong>${v}×</strong> ${k}</li>`)
-    .join('');
   const cardLimit = GAME_CONFIG.defaultCardLimit + (c.cardLimitBonus || 0);
   const home = CITIES[c.homeCity] ? CITIES[c.homeCity].name : c.homeCity;
   return `
@@ -37,13 +34,10 @@ function characterSkillsHtml(c) {
       <div class="skill-tip-name">${c.name}</div>
       <p class="skill-tip-blurb">${c.blurb || ''}</p>
       <div class="skill-tip-section">
-        <span class="skill-tip-label">Spend skills</span>
-        <ul class="skill-mults">${mults}</ul>
-      </div>
-      <div class="skill-tip-section">
-        <span class="skill-tip-label">Special</span>
+        <span class="skill-tip-label">Special skill</span>
         <p class="skill-tip-special">${c.specialDesc}</p>
       </div>
+      <p class="skill-tip-note">Spend earn rates come only from credit cards (0× without a card).</p>
       <div class="skill-tip-meta">
         <span>Home: ${home}</span>
         <span>Cards: up to ${cardLimit}</span>
@@ -53,10 +47,7 @@ function characterSkillsHtml(c) {
 }
 
 function characterSkillsTitle(c) {
-  const mults = Object.entries(c.multipliers || {})
-    .map(([k, v]) => `${v}× ${k}`)
-    .join(', ');
-  return `${c.name}\nSpend: ${mults}\nSkill: ${c.specialDesc}\nHome: ${c.homeCity}`;
+  return `${c.name}\nSkill: ${c.specialDesc}\nEarn: credit cards only (default 0×)\nHome: ${c.homeCity}`;
 }
 
 function showScreen(id) {
@@ -410,10 +401,15 @@ function renderPhasePanel(cur, snap) {
   if (!cur.turn.incomeDone) {
     panel.innerHTML = `
       <h3>Phase 2 — Income</h3>
-      <p>Allocate your $${fmt(GAME_CONFIG.budgetPerTurn)} budget. Character multipliers apply automatically.</p>
+      <p>Allocate your $${fmt(GAME_CONFIG.budgetPerTurn)} budget. Earn rates come from <strong>credit cards only</strong> (0× with no card).</p>
       <p class="char-tip"><em>${cur.character.name}:</em> ${cur.character.specialDesc}</p>
+      ${
+        !cur.cards.length
+          ? `<p class="bonus-tag" style="color:var(--danger)!important">No cards held — income will earn 0 pts. Apply for a card after income!</p>`
+          : ''
+      }
       <div class="income-actions">
-        <button type="button" class="btn primary" id="btn-auto-income">Auto-spend (recommended)</button>
+        <button type="button" class="btn primary" id="btn-auto-income">Auto-spend (best card categories)</button>
         <button type="button" class="btn" id="btn-custom-income">Custom allocation…</button>
       </div>
     `;
@@ -538,25 +534,38 @@ function closeModal() {
 }
 
 function openIncomeModal() {
-  const cats = Object.keys(game.currentPlayer.character.multipliers || {}).filter(
-    (k) => k !== 'everything'
-  );
-  if (!cats.length) cats.push('everything');
+  const cats = [
+    'dining',
+    'groceries',
+    'gas',
+    'travel',
+    'transit',
+    'rent',
+    'hotels',
+    'flights',
+    'everything',
+  ];
+  const p = game.currentPlayer;
+  const rates = cats.map((c) => {
+    const r = game.bestEarnRate(p, c);
+    return { c, rate: r.rate, card: r.card ? r.card.name : '—' };
+  });
 
   openModal(
     'Custom income allocation',
     `
-      <p>Total must be ≤ $${GAME_CONFIG.budgetPerTurn}</p>
-      ${cats
+      <p>Total must be ≤ $${GAME_CONFIG.budgetPerTurn}. Points = spend × <strong>card</strong> earn rate (0× without a card).</p>
+      ${rates
         .map(
-          (c) => `
+          (x) => `
         <label class="field">
-          ${c}
-          <input type="number" min="0" max="${GAME_CONFIG.budgetPerTurn}" value="${Math.floor(GAME_CONFIG.budgetPerTurn / cats.length)}" data-cat="${c}" />
+          ${x.c} <span class="muted">(${x.rate}× via ${x.card})</span>
+          <input type="number" min="0" max="${GAME_CONFIG.budgetPerTurn}" value="0" data-cat="${x.c}" />
         </label>
       `
         )
         .join('')}
+      <p class="muted">Tip: put budget on the highest × categories from your cards.</p>
     `,
     () => {
       const alloc = {};

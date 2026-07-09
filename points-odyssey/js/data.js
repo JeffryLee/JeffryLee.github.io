@@ -71,24 +71,26 @@ export const CATEGORIES = [
   'everything',
 ];
 
+/**
+ * Characters no longer grant spend multipliers — earn rates come only from credit cards.
+ * Default earn without a card: 0× on everything.
+ */
 export const CHARACTERS = [
   {
     id: 'consultant',
     name: 'The Consultant',
     image: 'assets/char-consultant.jpg',
-    blurb: 'Road warrior with fat travel & dining spend.',
-    multipliers: { travel: 3, dining: 2, everything: 1 },
+    blurb: 'Road warrior chasing Chase Ultimate Rewards and United.',
     homeCity: 'NYC',
     cardLimitBonus: 0,
     special: 'travel_focus',
-    specialDesc: 'Travel spend is king. Great for Chase/United.',
+    specialDesc: 'When you transfer to United, gain +10% miles on that transfer.',
   },
   {
     id: 'family',
     name: 'The Family',
     image: 'assets/char-family.jpg',
-    blurb: 'Groceries, gas, and weekend getaways.',
-    multipliers: { groceries: 3, gas: 2, everything: 1 },
+    blurb: 'Weekend getaways and free-night stacking.',
     homeCity: 'ORD',
     cardLimitBonus: 0,
     special: 'family_nights',
@@ -98,8 +100,7 @@ export const CHARACTERS = [
     id: 'nomad',
     name: 'The Nomad',
     image: 'assets/char-nomad.jpg',
-    blurb: 'Always moving — transit and travel.',
-    multipliers: { travel: 2, transit: 3, everything: 1 },
+    blurb: 'Always moving across the map.',
     homeCity: 'DEN',
     cardLimitBonus: 0,
     special: 'cheap_flight',
@@ -109,34 +110,31 @@ export const CHARACTERS = [
     id: 'foodie',
     name: 'The Foodie',
     image: 'assets/char-foodie.jpg',
-    blurb: 'Dining and markets fund the adventures.',
-    multipliers: { dining: 4, groceries: 2, everything: 1 },
+    blurb: 'Lives for dining — and Amex Gold synergy.',
     homeCity: 'SFO',
     cardLimitBonus: 0,
     special: 'dining_bonus',
-    specialDesc: '+500 bonus bank pts once per turn from dining.',
+    specialDesc: 'If you spend any budget on dining this turn, +500 bank pts once (needs a card to choose bank).',
   },
   {
     id: 'landlord',
     name: 'The Landlord',
     image: 'assets/char-landlord.jpg',
-    blurb: 'Rent Day is payday. Bilt is destiny.',
-    multipliers: { rent: 5, everything: 1 },
+    blurb: 'Rent Day believer. Bilt is destiny.',
     homeCity: 'LAX',
     cardLimitBonus: 0,
     special: 'rent_day',
-    specialDesc: 'Rent spend only works well with Bilt cards.',
+    specialDesc: 'Bilt earn is always +25% for you (stacks with Rent Day events).',
   },
   {
     id: 'executive',
     name: 'The Executive',
     image: 'assets/char-executive.jpg',
-    blurb: 'Premium flights, hotels, and client dinners.',
-    multipliers: { flights: 3, hotels: 3, dining: 2, everything: 1 },
+    blurb: 'Premium cards, flights, and client dinners.',
     homeCity: 'ATL',
     cardLimitBonus: 1,
     special: 'extra_card',
-    specialDesc: 'Hold up to 4 credit cards.',
+    specialDesc: 'Hold up to 4 credit cards (others cap at 3).',
   },
 ];
 

@@ -358,6 +358,14 @@ button {
   color: var(--cream);
 }
 
+.skill-tip-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--cream-dim);
+  font-style: italic;
+}
+
 .skill-tip-meta {
   display: flex;
   flex-wrap: wrap;
