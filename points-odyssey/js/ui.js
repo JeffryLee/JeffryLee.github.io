@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=tixnerf2';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=tixnerf2';
-import { playBotActions } from './bot.js?v=tixnerf2';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=tixnerf2';
+} from './game.js?v=goldpath1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=goldpath1';
+import { playBotActions } from './bot.js?v=goldpath1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=goldpath1';
 
 const game = new Game();
 let setupSelections = [];

@@ -21,7 +21,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=tixnerf2';
+} from './data.js?v=goldpath1';
 
 /**
  * Second+ cards: prefer non-Chase partners first so residual bank mix diversifies.
@@ -35,6 +35,74 @@ const CARD_PREFS = {
   landlord: ['strata', 'amex_gold', 'csp', 'double_cash'],
   executive: ['amex_plat', 'amex_gold', 'bilt_card', 'strata', 'csr'],
 };
+
+/**
+ * Smart Amex Gold → Hilton path (Foodie-first; also if holding Gold):
+ *  - Prefer Delta miles for tickets (most transfers)
+ *  - Light Amex→Hilton only when an open Hilton is 0–1 hops away and underfunded
+ *  - Hotel picks stay VP-first (never force Hilton over a better property)
+ */
+function usesGoldHiltonPath(p) {
+  if (!p || !p.character) return false;
+  if (p.character.id === 'foodie') return true;
+  return !!(p.cards && p.cards.some((c) => c.id === 'amex_gold'));
+}
+
+function holdsAmexGold(p) {
+  return !!(p.cards && p.cards.some((c) => c.id === 'amex_gold'));
+}
+
+/** Open Hilton claims within 0–1 hops that we can (almost) fund. */
+function nearbyOpenHiltons(game, p) {
+  const out = [];
+  for (const city of Object.values(CITIES)) {
+    const dist = hops(p.city, city.id);
+    if (dist > 1) continue;
+    for (const h of city.hotels || []) {
+      if (h.brand !== 'hilton') continue;
+      if (hotelTaken(game, h.id) || p.stayedHotels.has(h.id)) continue;
+      const cost = hCost(p, h);
+      out.push({
+        city: city.id,
+        id: h.id,
+        name: h.name,
+        cost,
+        dist,
+        vp: hVp(p, h, city.id),
+        shortfall: Math.max(0, cost - (p.hotels.hilton || 0)),
+      });
+    }
+  }
+  out.sort(
+    (a, b) =>
+      a.shortfall - b.shortfall || b.vp - a.vp || a.dist - b.dist || a.cost - b.cost
+  );
+  return out;
+}
+
+/** Light Amex → Hilton only for a nearby open claim (cover shortfall, cap dump). */
+function tryLightAmexToHilton(game, p) {
+  if (!canTransfer(p)) return false;
+  if (!holdsAmexGold(p) && p.character.id !== 'foodie') return false;
+  if ((p.banks.amex || 0) < 1000) return false;
+  const nearby = nearbyOpenHiltons(game, p);
+  if (!nearby.length) return false;
+  // Need at least one underfunded Hilton we could claim after a light xfer
+  const target = nearby.find((h) => h.shortfall > 0) || nearby[0];
+  if (!target || target.shortfall <= 0) return false;
+  // Amex→Hilton is 1:2, so need shortfall/2 Amex (round up to 1k)
+  const amexNeed = Math.ceil(target.shortfall / 2 / 1000) * 1000;
+  // Light: only what we need, max 8k Amex (~16k Hilton)
+  const send = Math.min(p.banks.amex, Math.max(1000, Math.min(8000, amexNeed)));
+  const amt = Math.floor(send / 1000) * 1000;
+  if (amt < 1000) return false;
+  if (!TRANSFERS.amex || !TRANSFERS.amex.hilton) return false;
+  return ok(() => game.transferPoints('amex', 'hilton', amt));
+}
+
+function preferDeltaMiles(p) {
+  return usesGoldHiltonPath(p) && (holdsAmexGold(p) || (p.banks.amex || 0) >= 1000);
+}
 
 function buildAdj() {
   const adj = {};
@@ -306,18 +374,22 @@ function makeXfer(p, kind, specific, minAmt = 10000) {
       if (!kind || partners[bonus.partner].type === kind) partner = bonus.partner;
     }
     if (!partner && kind === 'airline') {
-      // Prefer the thinnest airline balance (and de-prioritize UA pile-up)
-      const opts = ['delta', 'american', 'united'].filter((a) => partners[a]);
-      if (opts.length) {
+      // Gold path: prefer Delta (Amex 1:1) for ticket miles
+      let opts = ['delta', 'american', 'united'].filter((a) => partners[a]);
+      if (preferDeltaMiles(p) && partners.delta) {
+        opts = ['delta', ...opts.filter((a) => a !== 'delta')];
+      } else if (opts.length) {
         opts.sort(
           (a, b) =>
             (p.airlines[a] || 0) - (p.airlines[b] || 0) ||
             (a === 'united' ? 1 : 0) - (b === 'united' ? 1 : 0)
         );
-        partner = opts[0];
       }
+      if (opts.length) partner = opts[0];
     }
     if (!partner && kind === 'hotel') {
+      // Do not force Hilton for general hotel funding — Hyatt/Marriott often better VP.
+      // Hilton is handled by tryLightAmexToHilton when a nearby claim is open.
       partner =
         (partners.hyatt && 'hyatt') ||
         (partners.marriott && 'marriott') ||
@@ -352,10 +424,18 @@ function canBuild(p) {
 function ensureBotEarnPrefs(game, p) {
   if (!p.cards.length) return;
   const n = p.cards.length;
-  if (p._botPrefsCards === n) return;
+  if (p._botPrefsCards === n && p._botGoldPrefs === holdsAmexGold(p)) return;
   p._botPrefsCards = n;
+  p._botGoldPrefs = holdsAmexGold(p);
   if (typeof game.initDefaultEarnPrefs === 'function') {
     game.initDefaultEarnPrefs(p);
+  }
+  // Foodie / Gold holders: pin dining & groceries (and flights) to Amex Gold
+  if (holdsAmexGold(p) && (p.character.id === 'foodie' || usesGoldHiltonPath(p))) {
+    p.earnPrefs = p.earnPrefs || {};
+    p.earnPrefs.dining = 'amex_gold';
+    p.earnPrefs.groceries = 'amex_gold';
+    p.earnPrefs.flights = 'amex_gold';
   }
 }
 
@@ -428,7 +508,39 @@ function tryBook(game, f) {
 
 function tryXferForAirline(game, p, air, need) {
   if (!canTransfer(p)) return false;
-  const plan = makeXfer(p, 'airline', air, Math.max(8000, need));
+  // Gold path: when fueling flights, prefer Amex → Delta if possible
+  let want = air;
+  if (preferDeltaMiles(p) && air !== 'delta' && TRANSFERS.amex && TRANSFERS.amex.delta) {
+    // Still honor requested airline if Amex/Chase can fund it; else Delta
+    const chasePartners = TRANSFERS.chase || {};
+    if (!TRANSFERS.amex[air] && !chasePartners[air]) {
+      want = 'delta';
+    }
+  }
+  // Prefer Amex bank when holding Gold and partner is on Amex
+  if (preferDeltaMiles(p) && (p.banks.amex || 0) >= 1000) {
+    const partners = TRANSFERS.amex;
+    if (partners && partners[want]) {
+      const needAmt = Math.max(8000, need);
+      const amt =
+        Math.floor(Math.min(p.banks.amex, Math.max(needAmt, Math.floor(p.banks.amex * 0.75))) / 1000) *
+        1000;
+      if (amt >= 1000 && ok(() => game.transferPoints('amex', want, amt))) {
+        return true;
+      }
+    }
+    // Delta fallback from Amex even if request was UA/AA
+    if (want !== 'delta' && partners && partners.delta) {
+      const needAmt = Math.max(8000, need);
+      const amt =
+        Math.floor(Math.min(p.banks.amex, Math.max(needAmt, Math.floor(p.banks.amex * 0.75))) / 1000) *
+        1000;
+      if (amt >= 1000 && ok(() => game.transferPoints('amex', 'delta', amt))) {
+        return true;
+      }
+    }
+  }
+  const plan = makeXfer(p, 'airline', want, Math.max(8000, need));
   if (!plan) return false;
   return ok(() => game.transferPoints(plan.bank, plan.partner, plan.amount));
 }
@@ -451,6 +563,12 @@ function doOneAction(game, p) {
   const travel = canTravel(p);
   const build = canBuild(p);
   const xfer = canTransfer(p);
+  const topGap = gList[0];
+  const canFinishSoon =
+    topGap &&
+    topGap.rem === 1 &&
+    hops(p.city, topGap.city) <= 1 &&
+    air >= 5000;
 
   // ——— TRAVEL: best available flight by goal score ———
   if (travel) {
@@ -486,12 +604,7 @@ function doOneAction(game, p) {
     }
 
     // Hotel here if strong VP and no imminent ticket finish
-    const topGap = gList[0];
-    const canFinishSoon =
-      topGap &&
-      topGap.rem === 1 &&
-      hops(p.city, topGap.city) <= 1 &&
-      air >= 5000;
+    // bestStay is already VP-first (never forces Hilton over a better open stay)
     // Family prioritizes claiming hotels while open
     const hotelFirst =
       p.character.special === 'group_rate' || (stay && stay.vp >= 10) || late;
@@ -614,6 +727,28 @@ function doOneAction(game, p) {
       }
     }
 
+    // Gold path: fuel Delta/ticket miles BEFORE hotel points
+    if (preferDeltaMiles(p) && gList.length) {
+      const g0 = gList[0];
+      const opts = flightsTo(game, p, g0.city);
+      for (const f of opts.slice(0, 8)) {
+        if (f.ok) continue;
+        // Prefer Delta-operated options when available
+        if (f.air === 'delta' && tryXferForAirline(game, p, 'delta', Math.max(f.need, 8000))) {
+          return `fuel DL tickets`;
+        }
+      }
+      for (const f of opts.slice(0, 6)) {
+        if (f.ok) continue;
+        if (tryXferForAirline(game, p, f.air, Math.max(f.need, 10000))) {
+          return `fuel ${f.air}`;
+        }
+      }
+      if ((p.airlines.delta || 0) < 10000 && (p.banks.amex || 0) >= 1000) {
+        if (tryXferForAirline(game, p, 'delta', 10000)) return `stock DL`;
+      }
+    }
+
     // Fuel specific airline for top goal
     if (gList.length && travel) {
       const g = gList[0];
@@ -628,13 +763,22 @@ function doOneAction(game, p) {
 
     // Need miles for goals
     if (air < 12000 && gList.length) {
-      const plan = makeXfer(p, 'airline', null, 12000);
+      const preferAir = preferDeltaMiles(p) ? 'delta' : null;
+      const plan =
+        (preferAir && makeXfer(p, 'airline', preferAir, 12000)) ||
+        makeXfer(p, 'airline', null, 12000);
       if (plan && ok(() => game.transferPoints(plan.bank, plan.partner, plan.amount))) {
         return `miles→${plan.partner}`;
       }
     }
 
-    // Fund hotels when we have miles or no open goals
+    // Light Amex→Hilton only when open Hilton is 0–1 hops away and underfunded
+    // (skip if about to finish a ticket — miles matter more)
+    if (!canFinishSoon && tryLightAmexToHilton(game, p)) {
+      return `light Amex→Hilton (nearby claim)`;
+    }
+
+    // Fund hotels when we have miles or no open goals (not Hilton-forced)
     if (hot < 18000 && (air >= 8000 || !gList.length || late)) {
       const plan =
         makeXfer(p, 'hotel', 'hyatt', 12000) || makeXfer(p, 'hotel', null, 10000);
@@ -652,7 +796,12 @@ function doOneAction(game, p) {
       const plan =
         hotEff < air * 0.7 && !gList.length
           ? makeXfer(p, 'hotel', null, 10000)
-          : makeXfer(p, 'airline', null, 10000);
+          : makeXfer(
+              p,
+              'airline',
+              preferDeltaMiles(p) ? 'delta' : null,
+              10000
+            ) || makeXfer(p, 'airline', null, 10000);
       if (plan && ok(() => game.transferPoints(plan.bank, plan.partner, plan.amount))) {
         return `xfer→${plan.partner}`;
       }
