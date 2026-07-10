@@ -81,9 +81,9 @@ export const BANKS = {
 };
 
 export const HOTELS = {
-  marriott: { id: 'marriott', name: 'Marriott', color: '#8B1A4A', icon: '🏨', logo: 'assets/hotels/brands/marriott.png?v=brand3' },
-  hilton: { id: 'hilton', name: 'Hilton', color: '#004B87', icon: '🛏️', logo: 'assets/hotels/brands/hilton.png?v=brand3' },
-  hyatt: { id: 'hyatt', name: 'Hyatt', color: '#6B2D5B', icon: '🔑', logo: 'assets/hotels/brands/hyatt.png?v=brand3' },
+  marriott: { id: 'marriott', name: 'Marriott', color: '#8B1A4A', icon: '🏨', logo: 'assets/hotels/brands/marriott.png?v=brand4' },
+  hilton: { id: 'hilton', name: 'Hilton', color: '#004B87', icon: '🛏️', logo: 'assets/hotels/brands/hilton.png?v=brand4' },
+  hyatt: { id: 'hyatt', name: 'Hyatt', color: '#6B2D5B', icon: '🔑', logo: 'assets/hotels/brands/hyatt.png?v=brand4' },
 };
 
 export const AIRLINES = {
