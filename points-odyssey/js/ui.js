@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=nomad2';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=nomad2';
-import { playBotActions } from './bot.js?v=nomad2';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=nomad2';
+} from './game.js?v=spendui1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=spendui1';
+import { playBotActions } from './bot.js?v=spendui1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=spendui1';
 
 const game = new Game();
 let setupSelections = [];
@@ -83,6 +83,24 @@ function characterSkillsListHtml(c, className = 'skill-bullets') {
     .map((s) => `<li>${s}</li>`)
     .join('');
   return items ? `<ul class="${className}">${items}</ul>` : '';
+}
+
+/** Compact spend-structure block for setup character cards. */
+function characterSpendStructureHtml(c) {
+  const lines = formatSpendProfileLines(c);
+  if (!lines.length) return '';
+  const chips = lines
+    .map(
+      (x) =>
+        `<span class="spend-struct-chip" title="${x.pct}% of lifestyle roll"><strong>${x.pct}%</strong> ${x.cat}</span>`
+    )
+    .join('');
+  return `
+    <div class="spend-struct">
+      <div class="spend-struct-label">Monthly spend mix</div>
+      <div class="spend-struct-chips">${chips}</div>
+    </div>
+  `;
 }
 
 /** Format character special + spend appearance probs for tooltips */
@@ -1511,6 +1529,9 @@ function openModal(title, bodyHtml, onConfirm) {
 
 function closeModal() {
   $('#modal-overlay').classList.remove('open');
+}
+
+function openCardMosList.remove('open');
 }
 
 function openCardModal() {

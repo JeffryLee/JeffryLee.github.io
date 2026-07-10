@@ -270,6 +270,42 @@ button {
   font-size: 0.8rem;
 }
 
+.spend-struct {
+  margin: 0.45rem 0 0.35rem;
+}
+
+.spend-struct-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cream-dim);
+  margin-bottom: 0.3rem;
+}
+
+.spend-struct-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+.spend-struct-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border, #2a3a55);
+  border-radius: 999px;
+  padding: 0.18rem 0.45rem;
+}
+
+.spend-struct-chip strong {
+  color: var(--gold-soft, #e8c96a);
+  font-weight: 600;
+}
+
 .skill-bullets {
   margin: 0.25rem 0 0;
   padding-left: 0.95em;
