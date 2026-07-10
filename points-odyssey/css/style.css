@@ -272,8 +272,9 @@ button {
 
 .skill-bullets {
   margin: 0.25rem 0 0;
-  padding-left: 1.1rem;
+  padding-left: 0.95em;
   list-style: disc;
+  list-style-position: outside;
   color: var(--cream);
   font-size: 0.8rem;
   line-height: 1.4;
@@ -437,7 +438,7 @@ button {
 }
 
 ul.skill-tip-special.skill-bullets {
-  padding-left: 1.15rem;
+  padding-left: 0.95em;
   list-style: disc;
 }
 

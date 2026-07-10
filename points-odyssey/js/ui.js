@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=skills1';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=skills1';
-import { playBotActions } from './bot.js?v=skills1';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=skills1';
+} from './game.js?v=skills2';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=skills2';
+import { playBotActions } from './bot.js?v=skills2';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=skills2';
 
 const game = new Game();
 let setupSelections = [];
