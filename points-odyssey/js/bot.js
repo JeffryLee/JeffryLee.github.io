@@ -18,7 +18,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=botopt1';
+} from './data.js?v=foodieopt1';
 
 /**
  * Per-character bot profile.
@@ -39,14 +39,19 @@ const CHAR_STRAT = {
     earnPins: { amex_gold: ['dining', 'groceries', 'flights', 'travel'] },
   },
   foodie: {
-    // Dining→Gold earn; flexible airline (avoid overcrowding pure-DL meta)
-    cards: ['amex_gold', 'strata', 'bilt_card', 'csp'],
-    preferAir: null,
-    hotelPriority: 'normal',
-    lightHilton: true,
+    // Max-VP path (sims): Amex Gold earn → dump to Delta → tickets; hotels secondary
+    cards: ['amex_gold', 'delta_gold', 'strata', 'csp'],
+    preferAir: 'delta',
+    hotelPriority: 'low',
+    lightHilton: false,
     hotelXfer: null,
     exploreBoost: false,
-    earnPins: { amex_gold: ['dining', 'groceries'] },
+    earnPins: {
+      amex_gold: ['dining', 'groceries', 'flights', 'travel', 'others'],
+    },
+    /** Fraction of Amex balance to push to preferAir when free/build transfer free */
+    airDumpPct: 0.65,
+    ticketEager: true,
   },
   nomad: {
     cards: ['amex_gold', 'bilt_card', 'csp', 'cfu'],
@@ -650,10 +655,13 @@ function doOneAction(game, p) {
           best = f;
         }
       }
-      // Ticket-focused chars accept slightly weaker flight scores (post ticket nerf)
-      const flyMin = hotelPriorityLow(p) || preferDeltaMiles(p) ? 16 : 22;
+      // Ticket-focused chars accept weaker flight scores (post ticket nerf)
+      const flyMin =
+        strat(p).ticketEager || hotelPriorityLow(p) || preferDeltaMiles(p)
+          ? 12
+          : 22;
       if (best && bestSc >= flyMin && tryBook(game, best)) {
-        return bestSc >= 100 ? `FINISH→${best.to}` : `fly→${best.to}`;
+        return bestSc >= 90 ? `FINISH→${best.to}` : `fly→${best.to}`;
       }
     }
 
@@ -803,6 +811,22 @@ function doOneAction(game, p) {
       }
     }
 
+    // Foodie (etc.): aggressive Amex → Delta dump for ticket fuel
+    const s = strat(p);
+    if (s.airDumpPct && s.preferAir && (p.banks.amex || 0) >= 2000) {
+      const partners = TRANSFERS.amex;
+      if (partners && partners[s.preferAir]) {
+        const bal = p.banks.amex;
+        const amt =
+          Math.floor(
+            Math.min(bal, Math.max(5000, bal * s.airDumpPct)) / 1000
+          ) * 1000;
+        if (amt >= 1000 && ok(() => game.transferPoints('amex', s.preferAir, amt))) {
+          return `dump Amex→${s.preferAir}`;
+        }
+      }
+    }
+
     // Ticket path: fuel preferred airline before hotel points
     const prefA = preferAir(p);
     if (prefA && gList.length && !hotelPriorityHigh(p)) {
@@ -902,7 +926,8 @@ function doOneAction(game, p) {
 
     // Draw tickets if empty or need more goals (ticket-path chars draw more eagerly)
     const open = (p.tickets || []).length;
-    const ticketEager = hotelPriorityLow(p) || preferDeltaMiles(p);
+    const ticketEager =
+      strat(p).ticketEager || hotelPriorityLow(p) || preferDeltaMiles(p);
     if (open === 0 && round <= maxR - 1) {
       if (
         ok(() => {
@@ -916,9 +941,9 @@ function doOneAction(game, p) {
       }
     }
     if (
-      open <= 1 &&
+      open <= (ticketEager ? 2 : 1) &&
       round >= 2 &&
-      round <= maxR - 2 &&
+      round <= maxR - (ticketEager ? 1 : 2) &&
       (ticketEager || gList.filter((x) => !x.race).length <= 1)
     ) {
       if (

@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=botopt1';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=botopt1';
-import { playBotActions } from './bot.js?v=botopt1';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=botopt1';
+} from './game.js?v=foodieopt1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=foodieopt1';
+import { playBotActions } from './bot.js?v=foodieopt1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=foodieopt1';
 
 const game = new Game();
 let setupSelections = [];
