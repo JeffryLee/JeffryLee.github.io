@@ -5,3 +5,7 @@
 node_modules/
 *.swp
 *~
+
+# Hotel generation intermediates (icons are committed)
+points-odyssey/assets/hotels/refs/
+points-odyssey/assets/hotels/refs_sq/

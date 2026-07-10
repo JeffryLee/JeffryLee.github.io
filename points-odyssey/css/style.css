@@ -665,8 +665,10 @@ button {
   background: var(--panel);
   border-left: 1px solid var(--border);
   padding: 0.85rem 1rem 1.5rem;
+  overflow-x: hidden;
   overflow-y: auto;
   max-height: calc(100vh - 60px);
+  min-width: 0;
 }
 
 .side-panel h3 {
@@ -1092,42 +1094,140 @@ button {
   min-width: 4.5rem;
 }
 
+.earn-pref-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
 .earn-pref-list {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 0;
 }
 
+/* Stacked rows so long card names never crush the side panel */
 .earn-pref-row {
-  display: grid;
-  grid-template-columns: 4.5rem 1fr auto;
-  gap: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.4rem 0.45rem;
+  background: var(--navy-2, #0f1a30);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.earn-pref-meta {
+  display: flex;
   align-items: center;
-  font-size: 0.78rem;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .earn-pref-cat {
   text-transform: capitalize;
-  color: var(--cream-dim);
-}
-
-.earn-pref-row select {
-  width: 100%;
-  font-size: 0.75rem;
-  padding: 0.2rem 0.3rem;
-  background: var(--navy);
   color: var(--cream);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .earn-pref-rate {
-  font-size: 0.68rem;
-  max-width: 5.5rem;
-  text-align: right;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-family: var(--mono, ui-monospace, monospace);
+  color: var(--gold-soft, #e8c56a);
+  background: rgba(212, 160, 23, 0.12);
+  border: 1px solid rgba(212, 160, 23, 0.35);
+  border-radius: 999px;
+  padding: 0.08rem 0.45rem;
   white-space: nowrap;
+}
+
+.earn-pref-select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  padding: 0.35rem 0.45rem;
+  background: var(--navy, #0a1224);
+  color: var(--cream, #f0e6d3);
+  border: 1px solid var(--border, #2a3a55);
+  border-radius: 6px;
+  /* Prevent native select from forcing row wider than panel */
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.earn-pref-select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.earn-pref-select:focus {
+  outline: none;
+  border-color: var(--gold, #d4a017);
+  box-shadow: 0 0 0 1px rgba(212, 160, 23, 0.35);
+}
+
+#earn-prefs {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Hotel icons (i2i from real exteriors) */
+.hotel-list {
+  list-style: none;
+  margin: 0.4rem 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.hotel-list-item {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.hotel-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border, #2a3a55);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  background: #0a1224;
+}
+
+.hotel-icon-lg {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+}
+
+.hotel-pick {
+  display: flex !important;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.hotel-pick .hotel-icon {
+  margin-left: 0.15rem;
 }
 
 .char-tip {

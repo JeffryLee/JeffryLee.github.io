@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=chase1';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=chase1';
-import { playBotActions } from './bot.js?v=chase1';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=chase1';
+} from './game.js?v=hotels1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=hotels1';
+import { playBotActions } from './bot.js?v=hotels1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=hotels1';
 
 const game = new Game();
 let setupSelections = [];
@@ -750,7 +750,7 @@ function showCityInfo(cityId, cur) {
   panel.innerHTML = `
     <h3>${city.name} (${city.id})</h3>
     <p><strong>Signature hotels</strong> <span class="muted">(1 night each, once per game)</span>:</p>
-    <ul>
+    <ul class="hotel-list">
       ${(city.hotels || [])
         .map((h) => {
           const brand = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
@@ -759,7 +759,14 @@ function showCityInfo(cityId, cur) {
           if (cur.character && cur.character.special === 'group_rate') hMult *= 0.85;
           const cost = Math.floor(h.cost * hMult);
           const vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
-          return `<li><strong>${h.name}</strong><br/><span class="muted">${brand} · ${fmt(cost)} pts · ${vp} VP${done}</span></li>`;
+          const icon = h.icon || `assets/hotels/icons/${h.id}.jpg`;
+          return `<li class="hotel-list-item">
+            <img class="hotel-icon" src="${icon}" alt="" width="48" height="48" loading="lazy" />
+            <div>
+              <strong>${h.name}</strong><br/>
+              <span class="muted">${brand} · ${fmt(cost)} pts · ${vp} VP${done}</span>
+            </div>
+          </li>`;
         })
         .join('')}
     </ul>
@@ -981,16 +988,36 @@ const EARN_PREF_CATS = [
   'everything',
 ];
 
+/** Short labels for earn-pref dropdowns (side panel is narrow) */
+const CARD_SHORT = {
+  csp: 'CSP',
+  csr: 'CSR',
+  cfu: 'Freedom Unlim.',
+  cff: 'Freedom Flex',
+  amex_gold: 'Amex Gold',
+  amex_plat: 'Amex Plat',
+  amex_blue: 'Amex Blue',
+  delta_gold: 'Delta Gold',
+  strata: 'Strata',
+  custom_cash: 'Custom Cash',
+  double_cash: 'Double Cash',
+  bilt_card: 'Bilt',
+};
+
+function cardShortName(c) {
+  return CARD_SHORT[c.id] || c.name || c.id;
+}
+
 /** Side-panel: assign which held card earns each spend category */
 function renderEarnPrefs(cur, snap) {
   const el = $('#earn-prefs');
   if (!el) return;
   if (cur.isBot) {
-    el.innerHTML = `<p class="muted">Bot manages earn prefs automatically.</p>`;
+    el.innerHTML = `<p class="muted earn-pref-hint">Bot manages earn prefs automatically.</p>`;
     return;
   }
   if (!cur.cards.length) {
-    el.innerHTML = `<p class="muted">Hold a credit card to set earn preferences.</p>`;
+    el.innerHTML = `<p class="muted earn-pref-hint">Hold a credit card to set earn preferences.</p>`;
     return;
   }
   const prefs = cur.earnPrefs || {};
@@ -1002,26 +1029,42 @@ function renderEarnPrefs(cur, snap) {
     game.currentPlayer.id === cur.id;
   const live = editable ? game.currentPlayer : null;
 
+  // Only categories the player is likely to see (profile + any preferred)
+  const profileCats = Object.keys(cur.character.spendProfile || {});
+  const cats = EARN_PREF_CATS.filter(
+    (cat) =>
+      profileCats.includes(cat) ||
+      cat === 'everything' ||
+      prefs[cat]
+  );
+
   el.innerHTML = `
-    <p class="muted" style="margin:0 0 0.4rem;font-size:0.75rem">
-      Income is automatic each turn. Choose which card earns each category (Auto = best rate). Applies next income.
+    <p class="muted earn-pref-hint">
+      Auto income uses these cards. <strong>Auto</strong> = best rate. Changes apply next turn.
     </p>
     <div class="earn-pref-list">
-      ${EARN_PREF_CATS.map((cat) => {
-        const selected = prefs[cat] || '';
-        const rateInfo = live
-          ? game.earnCardForCategory(live, cat)
-          : { rate: 0, card: null };
-        const rateLabel = rateInfo.card
-          ? `${rateInfo.rate}×`
-          : editable
-            ? '0×'
-            : '';
-        return `
-        <label class="earn-pref-row">
-          <span class="earn-pref-cat">${cat}</span>
-          <select data-earn-cat="${cat}" ${editable ? '' : 'disabled'}>
-            <option value="">Auto (best rate)</option>
+      ${cats
+        .map((cat) => {
+          const selected = prefs[cat] || '';
+          const rateInfo = live
+            ? game.earnCardForCategory(live, cat)
+            : { rate: 0, card: null };
+          const rateLabel =
+            rateInfo.card && rateInfo.rate
+              ? `${rateInfo.rate}×`
+              : editable
+                ? '0×'
+                : '—';
+          return `
+        <div class="earn-pref-row">
+          <div class="earn-pref-meta">
+            <span class="earn-pref-cat">${cat}</span>
+            <span class="earn-pref-rate">${rateLabel}</span>
+          </div>
+          <select class="earn-pref-select" data-earn-cat="${cat}" ${
+            editable ? '' : 'disabled'
+          } title="${cat} earn card">
+            <option value="">Auto · best rate</option>
             ${cur.cards
               .map((c) => {
                 const def = CREDIT_CARDS.find((x) => x.id === c.id) || c;
@@ -1034,13 +1077,13 @@ function renderEarnPrefs(cur, snap) {
                       : 0;
                 return `<option value="${c.id}" ${
                   selected === c.id ? 'selected' : ''
-                }>${c.name} (${r}×)</option>`;
+                }>${cardShortName(c)} · ${r}×</option>`;
               })
               .join('')}
           </select>
-          <span class="earn-pref-rate muted">${rateLabel}</span>
-        </label>`;
-      }).join('')}
+        </div>`;
+        })
+        .join('')}
     </div>
   `;
 
@@ -1052,8 +1095,9 @@ function renderEarnPrefs(cur, snap) {
           toast(
             sel.value
               ? `${sel.dataset.earnCat} → ${sel.options[sel.selectedIndex].text}`
-              : `${sel.dataset.earnCat} → Auto (best rate)`
+              : `${sel.dataset.earnCat} → Auto`
           );
+          // Light re-render of prefs only would be ideal; full render keeps state consistent
           renderAll();
         } catch (e) {
           toast(e.message, true);
@@ -1835,10 +1879,12 @@ function openHotelModal() {
             const already = p.stayedHotels.has(h.id);
             const brandName = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
             const canPay = freeNight || bal >= cost;
+            const icon = h.icon || `assets/hotels/icons/${h.id}.jpg`;
             return `
-              <label class="card-option ${already ? 'disabled-opt' : ''}">
+              <label class="card-option hotel-pick ${already ? 'disabled-opt' : ''}">
                 <input type="radio" name="hotel" value="${h.id}"
                   ${already || !canPay ? 'disabled' : ''} />
+                <img class="hotel-icon hotel-icon-lg" src="${icon}" alt="" width="64" height="64" loading="lazy" />
                 <div>
                   <strong>${h.name}</strong>
                   <span class="bank-tag" style="background:${HOTELS[h.brand] ? HOTELS[h.brand].color : '#666'}">${brandName}</span>
