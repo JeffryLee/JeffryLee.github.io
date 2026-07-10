@@ -128,7 +128,7 @@ Exact route list and mile costs live in the digital rules engine (`js/data.js`).
 
 Each city lists **named signature hotels** (e.g. *Park Hyatt New York*, *Atlanta Marriott Marquis*, *Waldorf Astoria Las Vegas*), not bare brand labels. Paying still uses that property’s **loyalty currency** (Marriott / Hilton / Hyatt points).
 
-**Hard limit:** each player may stay at a given property **once per game**, for **exactly one night**.
+**Contention:** only the **first** player to stay at a given property claims it and earns its VP. That hotel is then **locked** for everyone else (shown live on the map city panel and book modal). Each stay is **exactly one night**.
 
 Hotel nights are a **primary scoring path**: award costs are discounted (~25%), base stay VP is **doubled**, Family gets +2, and the first stay in each city +1 VP. Leftover unspent points convert poorly at game end—**travel and hotels beat hoarding**.
 
@@ -181,7 +181,7 @@ Each turn after income you get **three slots**:
 | **Apply for Card** | Gain one new credit card (if under limit). *(Build)* |
 | **Transfer Points** | Bank → partner at listed ratio; apply transfer bonuses. *(Free once, else Build)* |
 | **Book Flight** | Nonstop or **one-stop same airline**. Consumes **1 award ticket** from that airline (**2 tickets per airline per round**). A one-stop still costs **1** ticket. May complete private tickets and claim **race goals**. *(Travel)* |
-| **Book Hotel** | **1 night** at one signature hotel in your city. Each property once per game. *(Travel)* |
+| **Book Hotel** | **1 night** at one signature hotel in your city. **First stay claims** the property (VP to claimer only; locked afterward). *(Travel)* |
 | **Draw Trip Tickets** | Draw 2, keep ≥1. *(Build)* |
 | **Rest / Plan** | +3,000 to a bank you use. *(Build)* |
 

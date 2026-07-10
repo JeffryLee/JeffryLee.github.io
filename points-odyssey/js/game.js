@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=brand4';
+} from './data.js?v=hotels2';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -62,7 +62,7 @@ function createPlayer(index, character, name, isBot = false) {
     segments: 0,
     nights: 0,
     nightsByBrand: { marriott: 0, hilton: 0, hyatt: 0 },
-    stayedHotels: new Set(), // property ids — one stay (1 night) each per game
+    stayedHotels: new Set(), // properties this player stayed at (1 night each)
     transfersDone: 0,
     vp: 0,
     achievements: new Set(),
@@ -254,11 +254,26 @@ export class Game {
      * One booking (nonstop or 1-stop same airline) = 1 ticket.
      */
     this.airlineAwards = {};
+    /**
+     * Shared hotel claims — only the first player to stay at a property earns its VP.
+     * Map: hotelId → { playerId, playerName }
+     */
+    this.hotelClaims = {};
     this.awardsLeft = this.awardsLeft.bind(this);
     this.resetAirlineAwards = this.resetAirlineAwards.bind(this);
     // Back-compat aliases used by older UI helpers
     this.seatsLeft = this.seatsLeft.bind(this);
     this.resetRouteSeats = this.resetAirlineAwards.bind(this);
+  }
+
+  /** @returns {{ playerId: number, playerName: string }|null} */
+  getHotelClaim(hotelId) {
+    if (!this.hotelClaims) this.hotelClaims = {};
+    return this.hotelClaims[hotelId] || null;
+  }
+
+  isHotelClaimed(hotelId) {
+    return !!this.getHotelClaim(hotelId);
   }
 
   resetAirlineAwards() {
@@ -364,6 +379,7 @@ export class Game {
     this.winner = null;
     this.finalScores = null;
     this.log = [];
+    this.hotelClaims = {};
     this.resetRouteSeats();
 
     // Deal tickets, starter cards, seed points
@@ -1027,8 +1043,8 @@ export class Game {
 
   /**
    * Book one night at a signature hotel property.
-   * Rule: each property may be stayed at only once per player per game (exactly 1 night).
-   * @param {string} hotelId - property id e.g. 'nyc-ritz' / 'nyc-marriott'
+   * First player to stay claims the property and earns its VP; later stays are blocked.
+   * @param {string} hotelId - property id e.g. 'nyc-marriott'
    */
   bookHotel(hotelId) {
     const p = this.currentPlayer;
@@ -1037,6 +1053,17 @@ export class Game {
     const hotel = (city.hotels || []).find((h) => h.id === hotelId);
     if (!hotel) {
       throw new Error('That hotel is not in your current city');
+    }
+    if (!this.hotelClaims) this.hotelClaims = {};
+    const existing = this.hotelClaims[hotelId];
+    if (existing) {
+      const by =
+        existing.playerId === p.id
+          ? 'you'
+          : existing.playerName || 'another player';
+      throw new Error(
+        `${hotel.name} is already claimed by ${by} — only the first stay earns VP`
+      );
     }
     if (p.stayedHotels.has(hotelId)) {
       throw new Error(
@@ -1071,6 +1098,12 @@ export class Game {
     p.nightsByBrand[brand] = (p.nightsByBrand[brand] || 0) + nights;
     p.stayedHotels.add(hotelId);
 
+    // First claimer locks the property for the rest of the game
+    this.hotelClaims[hotelId] = {
+      playerId: p.id,
+      playerName: p.name,
+    };
+
     // Buff hotel VP so staying beats hoarding leftovers
     let stayVp = Math.round(
       (hotel.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1)
@@ -1094,10 +1127,10 @@ export class Game {
     this.spendTravel(p);
 
     this.addLog(
-      `${p.name} stays 1n at ${hotel.name} (${city.name}) −${totalCost.toLocaleString()} ${brand} pts, +${stayVp} VP.`
+      `${p.name} claims ${hotel.name} (${city.name}) −${totalCost.toLocaleString()} ${brand} pts, +${stayVp} VP (first stay locks this hotel).`
     );
     this.checkAchievements(p);
-    return { hotel, nights, totalCost, stayVp, brand };
+    return { hotel, nights, totalCost, stayVp, brand, claimed: true };
   }
 
   drawTickets() {
@@ -1388,6 +1421,8 @@ export class Game {
       currentPlayerIndex: this.currentPlayerIndex,
       log: this.log.slice(0, 30),
       raceGoals: (this.raceGoals || []).map((t) => ({ ...t })),
+      /** Live shared hotel claims — UI should re-read this after every stay */
+      hotelClaims: { ...(this.hotelClaims || {}) },
       winner: this.winner
         ? { id: this.winner.id, name: this.winner.name, vp: this.winner.vp }
         : null,

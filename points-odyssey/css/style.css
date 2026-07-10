@@ -1541,3 +1541,12 @@ button {
 .flight-trail {
   pointer-events: none;
 }
+
+.hotel-list-item.hotel-claimed,
+.hotel-pick.hotel-claimed {
+  opacity: 0.55;
+}
+.hotel-list-item.hotel-claimed strong {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}

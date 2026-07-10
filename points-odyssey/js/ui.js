@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=brand4';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=brand4';
-import { playBotActions } from './bot.js?v=brand4';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=brand4';
+} from './game.js?v=hotels2';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=hotels2';
+import { playBotActions } from './bot.js?v=hotels2';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=hotels2';
 
 const game = new Game();
 let setupSelections = [];
@@ -300,6 +300,8 @@ function renderAll() {
     renderTurnChecklist(cur, snap);
     renderLog(snap);
     renderPhasePanel(cur, snap);
+    // Keep city hotel claim list live after any stay/bot action
+    if (lastCityInfoId) showCityInfo(lastCityInfoId, cur);
     maybeShowTutorial(cur, snap);
 
     // Auto-play bots (not during flight animation)
@@ -742,29 +744,41 @@ function renderMap(snap) {
   };
 }
 
+let lastCityInfoId = null;
+
 function showCityInfo(cityId, cur) {
+  lastCityInfoId = cityId;
   const city = CITIES[cityId];
   const routes = ROUTES.filter((r) => r.a === cityId || r.b === cityId);
-  const stayed = new Set(cur.stayedHotels || []);
+  const claims = (game && game.hotelClaims) || {};
   const panel = $('#city-info');
   panel.innerHTML = `
     <h3>${city.name} (${city.id})</h3>
-    <p><strong>Signature hotels</strong> <span class="muted">(1 night each, once per game)</span>:</p>
+    <p><strong>Signature hotels</strong> <span class="muted">(first stay claims · only claimer earns VP)</span>:</p>
     <ul class="hotel-list">
       ${(city.hotels || [])
         .map((h) => {
           const brand = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
-          const done = stayed.has(h.id) ? ' ✓ stayed' : '';
+          const claim = claims[h.id];
+          let status = '';
+          let itemClass = 'hotel-list-item';
+          if (claim) {
+            const mine = cur && claim.playerId === cur.id;
+            status = mine
+              ? ' · ✓ you claimed'
+              : ` · 🔒 claimed by ${claim.playerName}`;
+            itemClass += ' hotel-claimed';
+          }
           let hMult = GAME_CONFIG.hotelCostMultiplier || 1;
           if (cur.character && cur.character.special === 'group_rate') hMult *= 0.85;
           const cost = Math.floor(h.cost * hMult);
           const vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
           const icon = (HOTELS[h.brand] && HOTELS[h.brand].logo) || h.icon || `assets/hotels/brands/${h.brand}.png`;
-          return `<li class="hotel-list-item">
+          return `<li class="${itemClass}">
             <img class="hotel-icon" src="${icon}" alt="" width="48" height="48" loading="lazy" />
             <div>
               <strong>${h.name}</strong><br/>
-              <span class="muted">${brand} · ${fmt(cost)} pts · ${vp} VP${done}</span>
+              <span class="muted">${brand} · ${fmt(cost)} pts · ${vp} VP${status}</span>
             </div>
           </li>`;
         })

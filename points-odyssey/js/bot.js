@@ -21,7 +21,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=brand4';
+} from './data.js?v=hotels2';
 
 /**
  * Second+ cards: prefer non-Chase partners first so residual bank mix diversifies.
@@ -243,12 +243,16 @@ function affordableFlights(game, p) {
   return rows;
 }
 
-function bestStay(p) {
+function hotelTaken(game, hotelId) {
+  return !!(game && game.hotelClaims && game.hotelClaims[hotelId]);
+}
+
+function bestStay(p, game) {
   const city = CITIES[p.city];
   if (!city) return null;
   let best = null;
   for (const h of city.hotels || []) {
-    if (p.stayedHotels.has(h.id)) continue;
+    if (hotelTaken(game, h.id) || p.stayedHotels.has(h.id)) continue;
     const cost = hCost(p, h);
     if ((p.hotels[h.brand] || 0) < cost) continue;
     const vp = hVp(p, h, city.id);
@@ -259,11 +263,11 @@ function bestStay(p) {
   return best;
 }
 
-function bookableStays(p) {
+function bookableStays(p, game) {
   const out = [];
   for (const city of Object.values(CITIES)) {
     for (const h of city.hotels || []) {
-      if (p.stayedHotels.has(h.id)) continue;
+      if (hotelTaken(game, h.id) || p.stayedHotels.has(h.id)) continue;
       const cost = hCost(p, h);
       if ((p.hotels[h.brand] || 0) < cost) continue;
       out.push({
@@ -438,11 +442,11 @@ function doOneAction(game, p) {
   const round = game.round || 1;
   const maxR = game.maxRounds || GAME_CONFIG.maxRounds || 10;
   const gList = goals(game, p);
-  const stay = bestStay(p);
+  const stay = bestStay(p, game);
   const air = sum(p.airlines);
   const hot = sum(p.hotels);
   const bank = sum(p.banks);
-  const stays = bookableStays(p);
+  const stays = bookableStays(p, game);
   const late = round >= maxR - 2;
   const travel = canTravel(p);
   const build = canBuild(p);
