@@ -1,10 +1,9 @@
 # Hotel brand icons
 
-Three shared cartoon brand badges (one per chain):
+Three shared cartoon brand badges (one per chain), stylized from official brand marks via i2i:
 
-- `brands/hilton.jpg`
-- `brands/hyatt.jpg`
-- `brands/marriott.jpg`
+- `brands/hilton.jpg` — Hilton Honors (cartoon app badge)
+- `brands/hyatt.jpg` — Hyatt wordmark with arc (cartoon app badge)
+- `brands/marriott.jpg` — Marriott M monogram (cartoon app badge)
 
-Generated as simple monogram/mark badges for the Points Odyssey board-game UI.
-Individual property photos are not used — all hotels of a brand share the same icon.
+All hotels of a brand share the same icon.
