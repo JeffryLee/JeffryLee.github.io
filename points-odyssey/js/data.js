@@ -148,6 +148,10 @@ export const CHARACTERS = [
     homeCity: 'NYC',
     cardLimitBonus: 0,
     special: 'polished_routes',
+    skills: [
+      'All award flights cost 15% fewer miles',
+      'Private trip tickets grant +1 bonus VP',
+    ],
     specialDesc:
       'All award flights cost 15% fewer miles. Completing a private trip ticket grants +1 bonus VP.',
     spendProfile: {
@@ -167,6 +171,11 @@ export const CHARACTERS = [
     homeCity: 'ORD',
     cardLimitBonus: 0,
     special: 'group_rate',
+    skills: [
+      'Hotel nights −25% cost and +3 VP per stay',
+      'Start with 8k Marriott + 8k Hyatt',
+      'Groceries spend: +1 VP once/turn',
+    ],
     specialDesc:
       'Hotel nights −25% cost and +3 VP per stay. Start with 8k Marriott + 8k Hyatt. Groceries spend: +1 VP once/turn.',
     spendProfile: {
@@ -186,6 +195,11 @@ export const CHARACTERS = [
     homeCity: 'DEN',
     cardLimitBonus: 0,
     special: 'cheap_flight',
+    skills: [
+      'First flight each turn costs 30% fewer miles',
+      '+2 VP the first time you land in a new city',
+      'Private tickets grant +1 bonus VP',
+    ],
     specialDesc:
       'First flight each turn costs 30% fewer miles. +2 VP the first time you land in a new city. Completing a private ticket grants +1 bonus VP.',
     spendProfile: {
@@ -205,8 +219,8 @@ export const CHARACTERS = [
     homeCity: 'SFO',
     cardLimitBonus: 0,
     special: 'dining_bonus',
-    specialDesc:
-      'If any dining spend this turn: +1 VP (once/turn).',
+    skills: ['If any dining spend this turn: +1 VP (once/turn)'],
+    specialDesc: 'If any dining spend this turn: +1 VP (once/turn).',
     spendProfile: {
       dining: 45,
       groceries: 25,
@@ -223,6 +237,11 @@ export const CHARACTERS = [
     homeCity: 'LAX',
     cardLimitBonus: 0,
     special: 'rent_day',
+    skills: [
+      'Bilt earn +35% always (stacks with Rent Day events)',
+      'Rent on Bilt at least 2× before boost',
+      'Rent spend: +1 VP once/turn',
+    ],
     specialDesc:
       'Bilt earn +35% always (stacks with Rent Day events). Rent on Bilt at least 2× before boost. Rent spend: +1 VP once/turn.',
     spendProfile: {
@@ -242,6 +261,11 @@ export const CHARACTERS = [
     homeCity: 'ATL',
     cardLimitBonus: 1,
     special: 'extra_card',
+    skills: [
+      'Hold up to 3 cards (others 2)',
+      'Signup bonuses +10% larger',
+      'Start with a $4k Chase travel fund',
+    ],
     specialDesc:
       'Hold up to 3 cards (others 2). Signup bonuses +10% larger. Start with a $4k Chase travel fund.',
     spendProfile: {

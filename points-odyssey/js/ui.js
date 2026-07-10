@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=rebal2b';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=rebal2b';
-import { playBotActions } from './bot.js?v=rebal2b';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=rebal2b';
+} from './game.js?v=skills1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=skills1';
+import { playBotActions } from './bot.js?v=skills1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=skills1';
 
 const game = new Game();
 let setupSelections = [];
@@ -64,6 +64,27 @@ function formatSpendProfileLines(c) {
     });
 }
 
+/** Skill lines for UI bullets (prefer skills[]; fall back to specialDesc sentences). */
+function characterSkillLines(c) {
+  if (!c) return [];
+  if (Array.isArray(c.skills) && c.skills.length) {
+    return c.skills.map((s) => String(s).trim()).filter(Boolean);
+  }
+  const desc = (c.specialDesc || '').trim();
+  if (!desc) return [];
+  return desc
+    .split(/(?<=\.)\s+/)
+    .map((s) => s.replace(/\.$/, '').trim())
+    .filter(Boolean);
+}
+
+function characterSkillsListHtml(c, className = 'skill-bullets') {
+  const items = characterSkillLines(c)
+    .map((s) => `<li>${s}</li>`)
+    .join('');
+  return items ? `<ul class="${className}">${items}</ul>` : '';
+}
+
 /** Format character special + spend appearance probs for tooltips */
 function characterSkillsHtml(c) {
   const cardLimit = GAME_CONFIG.defaultCardLimit + (c.cardLimitBonus || 0);
@@ -72,6 +93,7 @@ function characterSkillsHtml(c) {
   const mults = lines
     .map((x) => `<li><strong>${x.pct}%</strong> ${x.cat}</li>`)
     .join('');
+  const skillList = characterSkillsListHtml(c, 'skill-bullets skill-tip-special');
   return `
     <div class="skill-tooltip" role="tooltip">
       <div class="skill-tip-name">${c.name}</div>
@@ -82,7 +104,7 @@ function characterSkillsHtml(c) {
       </div>
       <div class="skill-tip-section">
         <span class="skill-tip-label">Special skill</span>
-        <p class="skill-tip-special">${c.specialDesc}</p>
+        ${skillList}
       </div>
       <p class="skill-tip-note">Each income roll draws spend categories by these odds. Earn rates come only from credit cards (0× without a card).</p>
       <div class="skill-tip-meta">
@@ -98,7 +120,10 @@ function characterSkillsTitle(c) {
     .slice(0, 4)
     .map((x) => `${x.cat} ${x.pct}%`)
     .join(', ');
-  return `${c.name}\nSpend odds: ${lines}\nSkill: ${c.specialDesc}\nEarn: credit cards only (0× default)`;
+  const skills = characterSkillLines(c)
+    .map((s) => `• ${s}`)
+    .join('\n');
+  return `${c.name}\nSpend odds: ${lines}\nSkill:\n${skills || c.specialDesc || '—'}\nEarn: credit cards only (0× default)`;
 }
 
 function formatSpendRollHtml(roll) {
@@ -148,7 +173,7 @@ function renderSetup() {
         <div class="char-info">
           <h3>${c.name}</h3>
           <p>${c.blurb}</p>
-          <p class="special">${c.specialDesc}</p>
+          ${characterSkillsListHtml(c, 'skill-bullets special')}
           <p class="home">Home: ${home}</p>
           ${
             taken

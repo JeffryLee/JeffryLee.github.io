@@ -270,6 +270,23 @@ button {
   font-size: 0.8rem;
 }
 
+.skill-bullets {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  list-style: disc;
+  color: var(--cream);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.skill-bullets li {
+  margin: 0.15rem 0;
+}
+
+.char-info .skill-bullets {
+  margin-top: 0.35rem;
+}
+
 .char-info .home {
   color: var(--gold);
   font-size: 0.8rem;
@@ -417,6 +434,15 @@ button {
   font-size: 0.82rem;
   line-height: 1.4;
   color: var(--cream);
+}
+
+ul.skill-tip-special.skill-bullets {
+  padding-left: 1.15rem;
+  list-style: disc;
+}
+
+ul.skill-tip-special.skill-bullets li {
+  margin: 0.2rem 0;
 }
 
 .skill-tip-note {
