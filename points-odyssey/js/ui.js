@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=fixload1';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=fixload1';
-import { playBotActions } from './bot.js?v=fixload1';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=fixload1';
+} from './game.js?v=fixload2';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=fixload2';
+import { playBotActions } from './bot.js?v=fixload2';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=fixload2';
 
 const game = new Game();
 let setupSelections = [];
@@ -2080,7 +2080,20 @@ function wireNav() {
 }
 
 // Init
-wireNav();
-initMusicUI();
-renderSetup();
-showScreen('screen-setup'); // sets desiredTrack = menu (play waits for gesture)
+try {
+  wireNav();
+  initMusicUI();
+  renderSetup();
+  showScreen('screen-setup'); // sets desiredTrack = menu (play waits for gesture)
+} catch (err) {
+  console.error('[Points Odyssey] init failed', err);
+  const msg = err && err.message ? err.message : String(err);
+  document.body.insertAdjacentHTML(
+    'afterbegin',
+    `<div style="position:fixed;inset:0;z-index:99999;background:#0d1528;color:#f0e6d3;padding:2rem;font-family:system-ui">
+      <h1>Points Odyssey failed to load</h1>
+      <p style="color:#e74c3c">${msg}</p>
+      <p class="muted">Open the browser console for details, then hard-refresh.</p>
+    </div>`
+  );
+}
