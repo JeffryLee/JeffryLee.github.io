@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=others1';
+} from './data.js?v=tixnerf1';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -1019,14 +1019,14 @@ export class Game {
       if (firstVisit) newCities += 1;
     }
     p.city = toCity;
-    // Nomad: +2 VP per newly visited city this flight (one-stop can award 4)
+    // Nomad: +1 VP per newly visited city this flight
     if (p.character.special === 'cheap_flight' && newCities > 0) {
-      const cityVp = newCities * 2;
+      const cityVp = newCities * 1;
       p.vp += cityVp;
       this.addLog(
         `${p.name}'s Nomad skill: +${cityVp} VP (${newCities} new cit${
           newCities === 1 ? 'y' : 'ies'
-        } × 2).`
+        }).`
       );
     }
 
@@ -1271,7 +1271,7 @@ export class Game {
     if (!this.raceGoals || !this.raceGoals.length) return [];
     const remaining = [];
     const claimed = [];
-    const bonus = GAME_CONFIG.raceGoalBonusVp != null ? GAME_CONFIG.raceGoalBonusVp : 3;
+    const bonus = GAME_CONFIG.raceGoalBonusVp != null ? GAME_CONFIG.raceGoalBonusVp : 2;
     for (const t of this.raceGoals) {
       if (this.ticketComplete(player, t)) {
         let ticketVp = t.points + bonus;
@@ -1424,9 +1424,9 @@ export class Game {
     if (maxLong > 0) {
       const longLeaders = scores.filter((s) => s.longest === maxLong);
       for (const s of longLeaders) {
-        s.player.vp += 4;
+        s.player.vp += 3;
         s.vp = s.player.vp;
-        s.longBonus = 4;
+        s.longBonus = 3;
       }
     }
 
