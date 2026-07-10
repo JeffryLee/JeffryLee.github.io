@@ -219,13 +219,13 @@ export const CHARACTERS = [
     homeCity: 'SFO',
     cardLimitBonus: 0,
     special: 'dining_bonus',
-    // Dining identity VP; earn slightly less on dining (splurge tax vs pure optimizers)
+    // Nerf vs strong AA ticket bots: dining VP + earn tax
     skills: [
       'If any dining spend this turn: +1 VP (once/turn)',
-      'Dining spend earns 30% fewer points',
+      'Dining spend earns 44% fewer points',
     ],
     specialDesc:
-      'If any dining spend this turn: +1 VP (once/turn). Dining spend earns 30% fewer points.',
+      'If any dining spend this turn: +1 VP (once/turn). Dining spend earns 44% fewer points.',
     spendProfile: {
       dining: 45,
       groceries: 25,
@@ -243,11 +243,12 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'rent_day',
     skills: [
-      'Bilt earn +30% always (stacks with Rent Day events)',
+      'Bilt earn +35% always (stacks with Rent Day events)',
       'Rent on Bilt at least 2× before boost',
+      'All earn +8% (property income)',
     ],
     specialDesc:
-      'Bilt earn +30% always (stacks with Rent Day events). Rent on Bilt at least 2× before boost.',
+      'Bilt earn +35% always (stacks with Rent Day events). Rent on Bilt at least 2× before boost. All points earned +8%.',
     spendProfile: {
       rent: 50,
       dining: 15,

@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=strat10';
+} from './data.js?v=flbal2';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -627,12 +627,12 @@ export class Game {
 
       let pts = Math.floor(spend * rate);
 
-      // Foodie: dining earn −30% (splurge tax; balances strong ticket fuel from dining profile)
+      // Foodie: dining earn −44% (splurge tax; balances strong ticket fuel from dining profile)
       if (p.character.special === 'dining_bonus' && cat === 'dining') {
-        pts = Math.floor(pts * 0.7);
+        pts = Math.floor(pts * 0.56);
       }
 
-      // Landlord: rent on Bilt is at least 2×, then +25% Bilt earn (stacks with Rent Day event)
+      // Landlord: rent on Bilt is at least 2×, then +35% Bilt earn (stacks with Rent Day event)
       let earnRate = rate;
       if (
         p.character.special === 'rent_day' &&
@@ -644,10 +644,14 @@ export class Game {
       }
       let biltMult = p.turn.biltBoost || 1;
       if (p.character.special === 'rent_day' && bank === 'bilt') {
-        biltMult *= 1.3;
+        biltMult *= 1.35;
       }
       if (bank === 'bilt') {
         pts = Math.floor(pts * biltMult);
+      }
+      // Landlord: +8% all earn (helps Citi/AA ticket bots; keep modest vs free VP)
+      if (p.character.special === 'rent_day') {
+        pts = Math.floor(pts * 1.08);
       }
 
       if (card.directAirline) {
@@ -674,7 +678,7 @@ export class Game {
       });
     }
 
-    // Foodie: +1 VP dining once/turn (flights cost more — see fly())
+    // Foodie: +1 VP dining once/turn
     if (
       p.character.special === 'dining_bonus' &&
       (effective.dining || 0) > 0 &&
@@ -694,7 +698,7 @@ export class Game {
       p.turn.groceryBonusUsed = true;
       this.addLog(`${p.name}'s Family skill: +1 VP (groceries).`);
     }
-    // Landlord: free rent-VP removed for balance (Bilt earn skills carry identity)
+    // Landlord: free rent-VP omitted — earn mult carries identity for ticket bots
     // Executive: +2 VP every income (expense reports)
     if (p.character.special === 'extra_card') {
       p.vp += 2;

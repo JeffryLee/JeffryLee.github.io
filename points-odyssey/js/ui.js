@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=strat10';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=strat10';
-import { playBotActions } from './bot.js?v=strat10';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=strat10';
+} from './game.js?v=flbal2';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=flbal2';
+import { playBotActions } from './bot.js?v=flbal2';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=flbal2';
 
 const game = new Game();
 let setupSelections = [];

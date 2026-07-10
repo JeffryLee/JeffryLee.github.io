@@ -20,7 +20,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=strat10';
+} from './data.js?v=flbal2';
 
 /**
  * Per-character bot profile.
