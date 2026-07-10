@@ -1,8 +1,8 @@
 /**
  * Background music for Points Odyssey
  *
- * Critical: audio.play() must run in the same user-gesture call stack
- * (not after await). Browsers block play() after async gaps.
+ * Default: ON. Browsers block silent autoplay, so the first real user
+ * gesture (click/tap/key) starts playback. Pause stops it; Play resumes.
  *
  * Kevin MacLeod CC BY 4.0 — assets/music/CREDITS.md
  */
@@ -22,17 +22,21 @@ const TRACKS = {
   hotel: trackUrl('hotel-loop.mp3'),
 };
 
-const STORAGE_KEY = 'points-odyssey-music-muted';
+// v2: previous key could stick "paused" after a UI bug; fresh default is ON
+const STORAGE_KEY = 'points-odyssey-music-paused-v2';
 
 let audioEl = null;
 let currentKey = 'menu';
+/** Browser autoplay unlocked via a user gesture */
 let unlocked = false;
-let muted = false;
+/** User explicitly paused — do not auto-start */
+let pausedByUser = false;
+let gestureBound = false;
 
 try {
-  muted = localStorage.getItem(STORAGE_KEY) === '1';
+  pausedByUser = localStorage.getItem(STORAGE_KEY) === '1';
 } catch (e) {
-  muted = false;
+  pausedByUser = false;
 }
 
 function getAudio() {
@@ -41,32 +45,28 @@ function getAudio() {
   if (!audioEl) {
     audioEl = document.createElement('audio');
     audioEl.id = 'bg-music';
-    audioEl.setAttribute('playsinline', '');
-    audioEl.preload = 'auto';
     document.body.appendChild(audioEl);
   }
   audioEl.loop = true;
-  audioEl.volume = 0.4;
+  audioEl.volume = 0.45;
+  audioEl.preload = 'auto';
+  audioEl.setAttribute('playsinline', '');
+  audioEl.setAttribute('webkit-playsinline', '');
+
   audioEl.addEventListener('error', () => {
-    console.error('[music] error', audioEl.error, audioEl.src);
-    status('Music failed to load. Is the server running from points-odyssey/?', true);
+    const code = audioEl.error && audioEl.error.code;
+    console.error('[music] media error', code, audioEl.src);
+    setStatus('Music file failed to load', true);
   });
   audioEl.addEventListener('playing', () => {
-    status('Music playing', false);
+    setStatus('Music playing', false);
     updateButtons();
   });
-  audioEl.addEventListener('pause', updateButtons);
+  audioEl.addEventListener('pause', () => updateButtons());
   return audioEl;
 }
 
-function status(text, isError) {
-  const toast = document.getElementById('toast');
-  if (toast) {
-    toast.textContent = text;
-    toast.className = 'toast show' + (isError ? ' error' : '');
-    clearTimeout(toast._mt);
-    toast._mt = setTimeout(() => toast.classList.remove('show'), 3000);
-  }
+function setStatus(text, isError) {
   const el = document.getElementById('music-status');
   if (el) {
     el.textContent = text;
@@ -74,19 +74,29 @@ function status(text, isError) {
   }
 }
 
-function updateButtons() {
+function isPlaying() {
   const a = audioEl;
-  const playing = !!(a && !a.paused && !muted);
+  return !!(a && !a.paused && !a.ended && a.currentTime >= 0 && unlocked);
+}
+
+function rememberPaused(on) {
+  pausedByUser = !!on;
+  try {
+    localStorage.setItem(STORAGE_KEY, pausedByUser ? '1' : '0');
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+function updateButtons() {
+  const playing = isPlaying();
   document.querySelectorAll('[data-music-mute]').forEach((btn) => {
-    if (muted) {
-      btn.textContent = '🔇 Music off';
-      btn.title = 'Turn music on';
-    } else if (playing) {
-      btn.textContent = '🔊 Music on';
-      btn.title = 'Mute music';
+    if (playing) {
+      btn.textContent = '⏸ Pause';
+      btn.title = 'Pause music';
     } else {
-      btn.textContent = '▶ Play music';
-      btn.title = 'Start background music';
+      btn.textContent = '▶ Play';
+      btn.title = 'Play music';
     }
   });
 }
@@ -94,8 +104,9 @@ function updateButtons() {
 function setSrcIfNeeded(key) {
   const a = getAudio();
   const url = TRACKS[key] || TRACKS.menu;
-  const name = url.split('/').pop().split('?')[0];
-  if (!a.src || !decodeURIComponent(a.src).includes(name)) {
+  const name = (url.split('/').pop() || '').split('?')[0];
+  const cur = decodeURIComponent(a.currentSrc || a.src || '');
+  if (!cur || !cur.includes(name)) {
     a.src = url;
   }
   a.loop = true;
@@ -103,72 +114,78 @@ function setSrcIfNeeded(key) {
 }
 
 /**
- * Switch track. If already unlocked & not muted, start playback.
- * Does NOT await — keeps gesture chain when called from click.
- */
-export function playTrack(key) {
-  if (!TRACKS[key]) key = 'menu';
-  currentKey = key;
-  if (muted || !unlocked) {
-    updateButtons();
-    return;
-  }
-  const a = setSrcIfNeeded(key);
-  // fire-and-forget play (may work if already unlocked)
-  const p = a.play();
-  if (p && p.catch) {
-    p.catch((err) => console.warn('[music] play deferred:', err && err.message));
-  }
-  updateButtons();
-}
-
-/**
- * MUST be called directly from a click handler (no await before this).
- * Starts music in the same user-gesture turn.
+ * Begin playback. Safe to call from any user-gesture handler.
+ * Must not await anything before a.play().
  */
 export function startMusicFromClick() {
   unlocked = true;
-  muted = false;
-  try {
-    localStorage.setItem(STORAGE_KEY, '0');
-  } catch (e) {
-    /* ignore */
-  }
+  rememberPaused(false);
 
   const key = currentKey || 'menu';
   const a = setSrcIfNeeded(key);
 
-  // Synchronous play() in click stack — required by Chrome/Safari
-  const playPromise = a.play();
+  // Synchronous play() in the gesture stack
+  let playPromise;
+  try {
+    playPromise = a.play();
+  } catch (err) {
+    console.warn('[music] play() threw', err);
+    setStatus('Click ▶ Play to start music', true);
+    updateButtons();
+    return;
+  }
+
   if (playPromise && typeof playPromise.then === 'function') {
     playPromise
       .then(() => {
-        status('Music on', false);
+        setStatus('Music playing', false);
         updateButtons();
       })
       .catch((err) => {
-        // Retry once when data is ready (still sometimes works after load)
-        console.warn('[music] immediate play failed, retry on canplay', err);
-        const retry = () => {
-          a.play()
-            .then(() => {
-              status('Music on', false);
-              updateButtons();
-            })
-            .catch((e2) => {
-              console.error('[music] retry failed', e2);
-              status(
-                'Blocked by browser. Click ▶ Play music again.',
-                true
-              );
-              unlocked = false;
-              updateButtons();
-            });
-        };
-        if (a.readyState >= 2) retry();
-        else a.addEventListener('canplay', retry, { once: true });
-        a.load();
+        const name = (err && err.name) || '';
+        console.warn('[music] play rejected:', name, err && err.message);
+
+        // If still loading, retry once when enough data is ready (no load() —
+        // reload can abort the element and drop the gesture privilege).
+        if (a.readyState < 2) {
+          const onReady = () => {
+            a.play()
+              .then(() => {
+                setStatus('Music playing', false);
+                updateButtons();
+              })
+              .catch((e2) => {
+                console.error('[music] retry failed', e2);
+                unlocked = false;
+                setStatus('Click ▶ Play to start music', true);
+                updateButtons();
+              });
+          };
+          a.addEventListener('canplay', onReady, { once: true });
+          return;
+        }
+
+        unlocked = false;
+        setStatus('Click ▶ Play to start music', true);
+        updateButtons();
       });
+  }
+
+  updateButtons();
+}
+
+/** Switch ambient track (menu / play / city / hotel). */
+export function playTrack(key) {
+  if (!TRACKS[key]) key = 'menu';
+  currentKey = key;
+  if (pausedByUser || !unlocked) {
+    updateButtons();
+    return;
+  }
+  const a = setSrcIfNeeded(key);
+  const p = a.play();
+  if (p && p.catch) {
+    p.catch((err) => console.warn('[music] track switch deferred:', err && err.message));
   }
   updateButtons();
 }
@@ -178,34 +195,59 @@ export function stopMusic() {
   updateButtons();
 }
 
-export function setMuted(on) {
-  muted = !!on;
-  try {
-    localStorage.setItem(STORAGE_KEY, muted ? '1' : '0');
-  } catch (e) {
-    /* ignore */
-  }
-  if (muted && audioEl) {
-    audioEl.pause();
-    status('Music muted', false);
-  }
+export function pauseMusic() {
+  rememberPaused(true);
+  if (audioEl) audioEl.pause();
+  setStatus('Music paused', false);
   updateButtons();
 }
 
-/** Click handler: play if off, mute if on */
+export function setMuted(on) {
+  if (on) pauseMusic();
+  else startMusicFromClick();
+}
+
+/**
+ * Pause if currently playing; otherwise start/resume.
+ * (Do not treat "wanted on but silent" as pause — that blocked all audio.)
+ */
 export function toggleMute() {
-  const a = getAudio();
-  const playing = !!(unlocked && !muted && a && !a.paused);
-  if (playing) {
-    setMuted(true);
+  if (isPlaying()) {
+    pauseMusic();
   } else {
-    // Start / resume in this click gesture
     startMusicFromClick();
   }
 }
 
 export function isMuted() {
-  return muted;
+  return pausedByUser;
+}
+
+/** Call from any UI click so music starts with that gesture. */
+export function ensureMusic() {
+  if (!pausedByUser && !isPlaying()) {
+    startMusicFromClick();
+  }
+}
+
+function onFirstGesture(e) {
+  if (pausedByUser) return;
+  if (isPlaying()) return;
+  // Music control has its own handler (also starts/pauses)
+  if (e.target && e.target.closest && e.target.closest('[data-music-mute]')) {
+    return;
+  }
+  startMusicFromClick();
+}
+
+function bindGestureUnlock() {
+  if (gestureBound) return;
+  gestureBound = true;
+  // Capture phase so we run before other handlers stop propagation
+  const opts = { capture: true, passive: true };
+  document.addEventListener('pointerdown', onFirstGesture, opts);
+  document.addEventListener('keydown', onFirstGesture, opts);
+  document.addEventListener('touchstart', onFirstGesture, opts);
 }
 
 export function initMusicUI() {
@@ -220,19 +262,9 @@ export function initMusicUI() {
     });
   });
 
-  // First click anywhere (except we still handle mute button separately)
-  const unlockOnce = (e) => {
-    if (e.target && e.target.closest && e.target.closest('[data-music-mute]')) {
-      return;
-    }
-    if (!unlocked && !muted) {
-      startMusicFromClick();
-    }
-    document.removeEventListener('pointerdown', unlockOnce, true);
-  };
-  document.addEventListener('pointerdown', unlockOnce, true);
+  bindGestureUnlock();
 
-  // Preload menu (does not play)
+  // Preload menu bed
   try {
     const a = getAudio();
     a.src = TRACKS.menu;
@@ -241,8 +273,25 @@ export function initMusicUI() {
     console.warn('[music] preload', e);
   }
 
-  console.info('[music] ready', {
-    menu: TRACKS.menu,
-    muted,
-  });
+  // Attempt autoplay (usually blocked; succeeds on some browsers with prior engagement)
+  if (!pausedByUser) {
+    setStatus('Click anywhere to start music', false);
+    const a = setSrcIfNeeded('menu');
+    const p = a.play();
+    if (p && p.then) {
+      p.then(() => {
+        unlocked = true;
+        setStatus('Music playing', false);
+        updateButtons();
+      }).catch(() => {
+        // Expected — wait for gesture
+        setStatus('Click anywhere to start music', false);
+        updateButtons();
+      });
+    }
+  } else {
+    setStatus('Music paused', false);
+  }
+
+  console.info('[music] ready', { menu: TRACKS.menu, pausedByUser });
 }

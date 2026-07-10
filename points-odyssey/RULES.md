@@ -54,12 +54,12 @@ What characters *do* change is the **probability that each spend category appear
 
 | Character | Spend appearance (approx.) | Special skill |
 |-----------|----------------------------|---------------|
-| **The Consultant** | Travel, dining, flights/hotels | Flights **−15%** miles; **+4 VP** per completed trip ticket |
-| **The Family** | Groceries, gas, dining, some travel | Hotel nights cost **10% fewer** points (no free VP) |
-| **The Nomad** | Transit, travel, hotels/flights | First flight **−15%** miles; **+1 VP** per new city visited |
-| **The Foodie** | Dining, groceries dominant | Dining spend: **+1 VP** and **+2,000** bank pts once/turn |
-| **The Landlord** | Rent dominant, some dining/travel | Always **+20%** Bilt earn (stacks with Rent Day) |
-| **The Executive** | Flights, hotels, dining, travel | Hold **3** cards; signup bonuses **+20%** larger |
+| **The Consultant** | Travel, dining, flights/hotels | Flights **−15%** miles; **+3 VP** per private ticket (**+1** on races) |
+| **The Family** | Groceries, gas, dining, some travel | Hotel nights **−15%** cost and **+1 VP** per stay |
+| **The Nomad** | Transit, travel, hotels/flights | First flight **−20%** miles; **+1 VP** per new city visited |
+| **The Foodie** | Dining, groceries dominant | Dining spend: **+1 VP** once/turn (card earn only — no free bank dump) |
+| **The Landlord** | Rent dominant, some dining/travel | Bilt earn **+35%**; rent on Bilt at least **2×** before boost |
+| **The Executive** | Flights, hotels, dining, travel | Hold **3** cards; signups **+30%**; **$12k** Chase start fund; hotel stay **+3 VP** |
 
 **Points earned** = dollars in category × best **credit card** earn rate for that category.
 
@@ -159,44 +159,66 @@ Example events:
 | Devaluation | One random hotel brand: stay costs +25% this round (all players) |
 | Flash Sale | One city: hotel nights −30% cost this turn |
 
-### 2. Income Phase (mandatory)
+### 2. Income Phase (automatic)
 
-1. Roll **lifestyle spend** ($5,000 monthly budget): category chunks appear according to your character’s probability profile (you may re-roll once via UI, or fine-tune allocation).
-2. For each dollar in a category, earn points on the **best credit card** you hold for that category. **No card → 0×**.
-3. Track **signup bonus progress** toward min-spend on the card that earned the spend.
+1. Roll **lifestyle spend** ($5,000): category chunks by character odds (no re-roll, no manual allocation).
+2. For each category, earn on the **card you assigned** for that category (**Earn prefs**). If unset, use your **best rate** card. **No card → 0×**.
+3. Track **signup bonus progress** on the card that earned the spend.
+4. You may change earn prefs any time on your turn; they apply to the **next** income.
 
-### 3. Action Phase (choose **2 actions**)
+### 3. Action Phase (tight economy)
 
-Pick any two (same action twice only if marked **repeatable**):
+Each turn after income you get **three slots**:
+
+| Slot | What you can do |
+|------|-----------------|
+| **Free Transfer** (once) | Move bank points → hotel or airline partner. Does **not** cost Build. Extra transfers cost your Build. |
+| **Build** (once) | **Apply for Card**, **Draw Trip Tickets**, or **Rest / Plan** (+ bank points). |
+| **Travel** (once) | **Book Flight** or **Book Hotel**. |
 
 | Action | Effect |
 |--------|--------|
-| **Apply for Card** | Gain one new credit card (if under limit). Claim signup bonus after min-spend (often completed same turn if spend is high). |
-| **Transfer Points** | Move bank points → hotel or airline partner at listed ratio. Apply active transfer bonuses. *(repeatable)* |
-| **Book Flight** | Pay airline miles for a **nonstop** route, or a **one-stop** itinerary on the **same airline** (both legs). Cost = sum of leg costs. Nonstop = 1 segment; one-stop = 2 segments; still **1 action**. Connection city is visited. May complete trip tickets. *(repeatable)* |
-| **Book Hotel** | Stay **1 night** at one **signature hotel** in your current city. Pay that property’s brand points; score its VP. Each property only once per game. *(repeatable for different hotels)* |
-| **Draw Trip Tickets** | Draw 2 tickets, keep ≥1 (discard others). |
-| **Rest / Plan** | Gain +500 of any one bank currency you already earn (or +1 temporary action token next turn — digital: +1,000 flexible bank points to your strongest bank). |
+| **Apply for Card** | Gain one new credit card (if under limit). *(Build)* |
+| **Transfer Points** | Bank → partner at listed ratio; apply transfer bonuses. *(Free once, else Build)* |
+| **Book Flight** | Nonstop or **one-stop same airline**. Consumes **1 award ticket** from that airline (**2 tickets per airline per round**). A one-stop still costs **1** ticket. May complete private tickets and claim **race goals**. *(Travel)* |
+| **Book Hotel** | **1 night** at one signature hotel in your city. Each property once per game. *(Travel)* |
+| **Draw Trip Tickets** | Draw 2, keep ≥1. *(Build)* |
+| **Rest / Plan** | +3,000 to a bank you use. *(Build)* |
 
 ### 4. End of Turn
 
-- Check **trip ticket completion**
-- Check **achievements**
-- Pass to the next player
+- Pass to the next player  
+- When the round advances: **airline award tickets refill** (2 each for UA / DL / AA)
 
-After all players finish a round, advance the **Round marker**. After Round 10, proceed to **Final Scoring**.
+After Round 10, **Final Scoring**.
 
 ---
 
-## Trip Tickets
+## Trip Tickets & Race Goals
+
+### Private tickets
 
 Each ticket shows **Origin → Destination**, **VP if completed**, and **penalty if incomplete** at game end.
 
-**Completion (simplified):** You must have **visited both cities** at least once (your pawn has landed in origin and destination). You do **not** need a continuous flight graph between them—just get to both places.
+**Completion (ordered):** You must **land at the origin first**, then **later land at the destination**.
 
-Opening tickets prefer endpoints near your home city. Regional short tickets (e.g. NYC–BOS) score less but finish faster.
+Example: **DEN → NYC** — visit DEN first; only after DEN is checked can NYC be checked. Landing in NYC before DEN does **not** count for that ticket; you would need DEN, then NYC again.
 
-You may hold up to **4** trip tickets.
+No continuous flight path is required—only the ordered landings on your journey.
+
+Opening tickets prefer endpoints near home. You may hold up to **4**.
+
+### Public race goals (shared contention)
+
+Three face-up **🏁 race goals** sit on the board. **First player** to complete the **origin → destination** order claims the goal (ticket VP + race bonus). A new goal is dealt from the deck.
+
+### Award tickets (per airline)
+
+Each airline (United / Delta / American) has **2 award tickets per round**.
+
+- Booking a **nonstop or one-stop** itinerary costs **1 ticket** for that airline (connections do not double-count).
+- When an airline’s tickets hit 0, you cannot book that airline until the **next round**.
+- Inventory **resets when the round advances**.
 
 ---
 

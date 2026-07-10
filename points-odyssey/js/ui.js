@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js';
-import { BANKS, HOTELS, AIRLINES, getRoute } from './data.js';
-import { playBotActions } from './bot.js';
-import { initMusicUI, playTrack } from './music.js';
+} from './game.js?v=chase1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=chase1';
+import { playBotActions } from './bot.js?v=chase1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=chase1';
 
 const game = new Game();
 let setupSelections = [];
@@ -25,9 +25,29 @@ const BOT_STEP_MS = 700;
 /** During flight anim, keep pawn at origin until plane lands */
 let mapCityOverride = null; // { playerId, city }
 let flightAnimPlaying = false;
+/** First human turn onboarding (session) */
+const TUTORIAL_KEY = 'points-odyssey-tutorial-v1';
+let tutorialStep = 0; // 0=welcome, 1=income, 2=actions, 3=done
 
 const $ = (sel, el = document) => el.querySelector(sel);
 const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
+
+/** Award tickets left for an airline this round (1 booking = 1 ticket). */
+function awardsLeft(airline) {
+  try {
+    if (game && typeof game.awardsLeft === 'function') {
+      return game.awardsLeft(airline);
+    }
+    if (game && game.airlineAwards && game.airlineAwards[airline] != null) {
+      return game.airlineAwards[airline];
+    }
+  } catch (e) {
+    console.warn('[awardsLeft]', e);
+  }
+  return GAME_CONFIG.awardsPerAirlinePerRound != null
+    ? GAME_CONFIG.awardsPerAirlinePerRound
+    : 2;
+}
 
 function fmt(n) {
   return Math.round(n).toLocaleString();
@@ -229,30 +249,66 @@ function renderLobby() {
 // ——— Main render ———
 
 function renderAll() {
-  if (game.phase === 'ended') {
-    renderGameOver();
-    return;
-  }
-  if (game.phase !== 'playing') return;
+  try {
+    if (game.phase === 'ended') {
+      renderGameOver();
+      return;
+    }
+    if (game.phase !== 'playing') return;
 
-  const snap = game.snapshot();
-  const cur = snap.players[snap.currentPlayerIndex];
+    // Ensure airline award inventory exists
+    if (!game.airlineAwards || !Object.keys(game.airlineAwards).length) {
+      if (typeof game.resetAirlineAwards === 'function') game.resetAirlineAwards();
+      else if (typeof game.resetRouteSeats === 'function') game.resetRouteSeats();
+    }
 
-  $('#round-label').textContent = `Round ${snap.round} / ${snap.maxRounds}`;
-  $('#turn-label').textContent = cur.isBot
-    ? `🤖 ${cur.name}'s turn`
-    : `${cur.name}'s turn`;
-  $('#actions-left').textContent = `${(cur.turn && cur.turn.actionsLeft) || 0} actions left`;
+    const snap = game.snapshot();
+    const cur = snap.players[snap.currentPlayerIndex];
 
-  renderPlayersBar(snap);
-  renderMap(snap);
-  renderHand(cur, snap);
-  renderLog(snap);
-  renderPhasePanel(cur, snap);
+    $('#round-label').textContent = `Round ${snap.round} / ${snap.maxRounds}`;
+    $('#turn-label').textContent = cur.isBot
+      ? `🤖 ${cur.name}'s turn`
+      : `${cur.name}'s turn`;
+    const aw = snap.airlineAwards || game.airlineAwards || {};
+    const awEl = $('#awards-left');
+    if (awEl) {
+      awEl.textContent = `Awards UA ${aw.united != null ? aw.united : '—'} · DL ${
+        aw.delta != null ? aw.delta : '—'
+      } · AA ${aw.american != null ? aw.american : '—'}`;
+    }
+    // Prefer live turn for accurate action counts
+    const t =
+      (game.currentPlayer && game.currentPlayer.turn) || cur.turn;
+    if (t) {
+      if (!t.incomeDone) {
+        $('#actions-left').textContent = 'Income first';
+      } else {
+        const parts = [];
+        if ((Number(t.freeTransferLeft) || 0) > 0) parts.push('↺ free xfer');
+        parts.push(`Build ${Number(t.buildLeft) || 0}`);
+        parts.push(`Travel ${Number(t.travelLeft) || 0}`);
+        $('#actions-left').textContent = parts.join(' · ');
+      }
+    } else {
+      $('#actions-left').textContent = '—';
+    }
 
-  // Auto-play bots (not during flight animation)
-  if (cur.isBot && !botRunning && !flightAnimPlaying) {
-    scheduleBotTurn();
+    renderPlayersBar(snap);
+    renderMap(snap);
+    renderHand(cur, snap);
+    renderRaceGoals(snap, cur);
+    renderTurnChecklist(cur, snap);
+    renderLog(snap);
+    renderPhasePanel(cur, snap);
+    maybeShowTutorial(cur, snap);
+
+    // Auto-play bots (not during flight animation)
+    if (cur.isBot && !botRunning && !flightAnimPlaying) {
+      scheduleBotTurn();
+    }
+  } catch (err) {
+    console.error('[renderAll]', err);
+    toast(err && err.message ? err.message : String(err), true);
   }
 }
 
@@ -539,7 +595,7 @@ async function scheduleBotTurn() {
     try {
       if (game.phase === 'playing' && game.currentPlayer.isBot) {
         if (!game.currentPlayer.turn.incomeDone) {
-          game.doIncome(game.autoAllocate(game.currentPlayer));
+          game.doIncome();
         }
         const res = game.endTurn();
         if (res.gameOver) renderGameOver();
@@ -559,6 +615,17 @@ function renderMap(snap) {
   const pawnColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
   const iconR = 16;
 
+  // Ticket / race city highlights
+  const focusCities = new Set();
+  (cur.tickets || []).forEach((t) => {
+    focusCities.add(t.from);
+    focusCities.add(t.to);
+  });
+  (snap.raceGoals || []).forEach((t) => {
+    focusCities.add(t.from);
+    focusCities.add(t.to);
+  });
+
   // Routes
   let routesHtml = '';
   for (const r of ROUTES) {
@@ -572,10 +639,15 @@ function renderMap(snap) {
     const color = AIRLINES[primary] ? AIRLINES[primary].color : '#888';
     const key = [r.a, r.b].sort().join('-');
     const owned = cur.network.includes(key);
+    // Dim route if every airline that serves it is out of award tickets
+    const airs = r.airlines || [];
+    const anyAwards = airs.some((a) => awardsLeft(a) > 0);
+    const soldOut = airs.length > 0 && !anyAwards;
     routesHtml += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-      stroke="${color}" stroke-width="${owned ? 5 : 2}"
-      stroke-opacity="${owned ? 0.95 : 0.35}"
-      stroke-dasharray="${owned ? 'none' : '6 4'}" />`;
+      stroke="${soldOut ? '#555' : color}" stroke-width="${owned ? 5 : 2.5}"
+      stroke-opacity="${owned ? 0.95 : soldOut ? 0.22 : 0.55}"
+      stroke-linecap="round"
+      stroke-dasharray="${owned ? 'none' : soldOut ? '2 6' : '6 4'}" />`;
   }
 
   // Cities (dots + labels only — players drawn as head icons above)
@@ -584,13 +656,19 @@ function renderMap(snap) {
     const x = (c.x / 100) * w;
     const y = (c.y / 100) * h;
     const isCur = cur.city === c.id;
+    const isFocus = focusCities.has(c.id);
     citiesHtml += `
       <g class="city-node" data-city="${c.id}" style="cursor:pointer">
+        ${
+          isFocus
+            ? `<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="#ffb81c" stroke-width="1.5" stroke-opacity="0.7" stroke-dasharray="3 2" />`
+            : ''
+        }
         <circle cx="${x}" cy="${y}" r="${isCur ? 11 : 8}"
-          fill="${isCur ? '#d4a017' : '#1a2744'}"
-          stroke="#f0e6d3" stroke-width="2" />
+          fill="${isCur ? '#d4a017' : isFocus ? '#2a3d66' : '#1a2744'}"
+          stroke="${isFocus ? '#ffb81c' : '#f0e6d3'}" stroke-width="2" />
         <text x="${x}" y="${y - 16}" text-anchor="middle" fill="#f0e6d3"
-          font-size="11" font-weight="600">${c.id}</text>
+          font-size="11" font-weight="600">${c.id}${isFocus ? '★' : ''}</text>
       </g>
     `;
   }
@@ -678,7 +756,7 @@ function showCityInfo(cityId, cur) {
           const brand = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
           const done = stayed.has(h.id) ? ' ✓ stayed' : '';
           let hMult = GAME_CONFIG.hotelCostMultiplier || 1;
-          if (cur.character && cur.character.special === 'group_rate') hMult *= 0.9;
+          if (cur.character && cur.character.special === 'group_rate') hMult *= 0.85;
           const cost = Math.floor(h.cost * hMult);
           const vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
           return `<li><strong>${h.name}</strong><br/><span class="muted">${brand} · ${fmt(cost)} pts · ${vp} VP${done}</span></li>`;
@@ -738,27 +816,35 @@ function renderHand(cur, snap) {
         .join('')
     : `<span class="muted">No credit cards yet</span>`;
 
-  // Tickets — open + completed (completed stay visible, marked done)
+  // Earn prefs: which card earns each spend category (income is automatic)
+  renderEarnPrefs(cur, snap);
+
+  // Tickets — ordered: origin first, then destination
   const openTickets = cur.tickets || [];
   const doneTickets = cur.completedTickets || [];
   if (!openTickets.length && !doneTickets.length) {
-    $('#my-tickets').innerHTML = `<span class="muted">No trip tickets yet</span>`;
+    $('#my-tickets').innerHTML = `<span class="muted">No private tickets yet — draw with Build</span>`;
   } else {
     $('#my-tickets').innerHTML = [
       ...openTickets.map((t) => {
-        const vFrom = cur.visited.includes(t.from);
-        const vTo = cur.visited.includes(t.to);
-        const progress =
-          vFrom && vTo
-            ? 'ready'
-            : vFrom || vTo
-              ? 'half'
-              : 'none';
-        return `<div class="ticket open" title="Visit both cities to complete">
+        // Prefer engine-computed ordered progress (snapshot)
+        const vFrom = t.originDone != null ? t.originDone : false;
+        const vTo = t.destDone != null ? t.destDone : false;
+        const progress = vFrom && vTo ? 'ready' : vFrom ? 'half' : 'none';
+        const hint = !vFrom
+          ? `Land in ${t.from} first`
+          : !vTo
+            ? `Then land in ${t.to}`
+            : 'Complete!';
+        return `<div class="ticket open prog-${progress}" title="Ordered ticket: ${hint}">
             <span class="ticket-status" aria-label="Open">○</span>
             <strong>${t.from}${vFrom ? '✓' : ''} → ${t.to}${vTo ? '✓' : ''}</strong>
             <span class="ticket-pts">+${t.points} / −${t.penalty}${
-              progress === 'half' ? ' · 1/2' : ''
+              !vFrom
+                ? ` · go ${t.from}`
+                : !vTo
+                  ? ` · then ${t.to}`
+                  : ' · complete'
             }</span>
           </div>`;
       }),
@@ -766,7 +852,7 @@ function renderHand(cur, snap) {
         (t) =>
           `<div class="ticket completed" title="Completed · +${t.points} VP earned">
             <span class="ticket-status" aria-label="Completed">✓</span>
-            <strong>${t.from} → ${t.to}</strong>
+            <strong>${t.from} → ${t.to}${t.race ? ' 🏁' : ''}</strong>
             <span class="ticket-pts">+${t.points} VP · done</span>
           </div>`
       ),
@@ -812,65 +898,346 @@ function renderLog(snap) {
     .join('');
 }
 
+function renderRaceGoals(snap, cur) {
+  const el = $('#race-goals');
+  if (!el) return;
+  const goals = snap.raceGoals || [];
+  if (!goals.length) {
+    el.innerHTML = `<p class="muted">No open race goals</p>`;
+    return;
+  }
+  const journey = cur.journey || [];
+  el.innerHTML = goals
+    .map((t) => {
+      // Ordered: origin must appear before destination in journey
+      let vFrom = false;
+      let vTo = false;
+      for (let i = 0; i < journey.length; i++) {
+        if (!vFrom) {
+          if (journey[i] === t.from) vFrom = true;
+        } else if (journey[i] === t.to) {
+          vTo = true;
+          break;
+        }
+      }
+      const bonus =
+        GAME_CONFIG.raceGoalBonusVp != null ? GAME_CONFIG.raceGoalBonusVp : 3;
+      const hint = !vFrom
+        ? `Race: land ${t.from} first`
+        : !vTo
+          ? `Race: then land ${t.to}`
+          : 'Ready to claim!';
+      return `<div class="ticket race ${vFrom && !vTo ? 'prog-half' : vFrom && vTo ? 'prog-ready' : ''}" title="${hint}">
+        <span class="ticket-status">🏁</span>
+        <strong>${t.from}${vFrom ? '✓' : ''} → ${t.to}${vTo ? '✓' : ''}</strong>
+        <span class="ticket-pts">+${t.points}+${bonus}${
+          !vFrom ? ` · go ${t.from}` : !vTo ? ` · then ${t.to}` : ' · claim!'
+        }</span>
+      </div>`;
+    })
+    .join('');
+}
+
+function renderTurnChecklist(cur, snap) {
+  const el = $('#turn-checklist');
+  if (!el || !cur.turn) return;
+  if (cur.isBot) {
+    el.innerHTML = `<div class="check-row muted">🤖 Watching ${cur.name} play…</div>`;
+    return;
+  }
+  const t = cur.turn;
+  const income = t.incomeDone;
+  const freeX = (t.freeTransferLeft || 0) > 0;
+  const build = (t.buildLeft || 0) > 0;
+  const travel = (t.travelLeft || 0) > 0;
+  const tip = suggestNextMove(cur, snap);
+  el.innerHTML = `
+    <div class="check-title">Your turn</div>
+    <div class="check-row ${income ? 'done' : 'now'}">${income ? '✓' : '①'} Event + auto income</div>
+    <div class="check-row ${!income ? '' : freeX ? 'now' : 'done'}">${
+      freeX || !income ? '↺' : '✓'
+    } Free transfer <span class="muted">(book prep)</span></div>
+    <div class="check-row ${!income ? '' : build ? 'now' : 'done'}">${
+      build || !income ? 'B' : '✓'
+    } Build <span class="muted">card · tickets · rest</span></div>
+    <div class="check-row ${!income ? '' : travel ? 'now' : 'done'}">${
+      travel || !income ? 'T' : '✓'
+    } Travel <span class="muted">flight · hotel</span></div>
+    <div class="check-row">→ End turn</div>
+    ${tip ? `<div class="suggest-tip">💡 ${tip}</div>` : ''}
+  `;
+}
+
+/** Plain-language next-step for humans on game 1 */
+const EARN_PREF_CATS = [
+  'dining',
+  'groceries',
+  'gas',
+  'travel',
+  'transit',
+  'rent',
+  'hotels',
+  'flights',
+  'everything',
+];
+
+/** Side-panel: assign which held card earns each spend category */
+function renderEarnPrefs(cur, snap) {
+  const el = $('#earn-prefs');
+  if (!el) return;
+  if (cur.isBot) {
+    el.innerHTML = `<p class="muted">Bot manages earn prefs automatically.</p>`;
+    return;
+  }
+  if (!cur.cards.length) {
+    el.innerHTML = `<p class="muted">Hold a credit card to set earn preferences.</p>`;
+    return;
+  }
+  const prefs = cur.earnPrefs || {};
+  // Editable when this is the human whose turn it is
+  const editable =
+    game.phase === 'playing' &&
+    game.currentPlayer &&
+    !game.currentPlayer.isBot &&
+    game.currentPlayer.id === cur.id;
+  const live = editable ? game.currentPlayer : null;
+
+  el.innerHTML = `
+    <p class="muted" style="margin:0 0 0.4rem;font-size:0.75rem">
+      Income is automatic each turn. Choose which card earns each category (Auto = best rate). Applies next income.
+    </p>
+    <div class="earn-pref-list">
+      ${EARN_PREF_CATS.map((cat) => {
+        const selected = prefs[cat] || '';
+        const rateInfo = live
+          ? game.earnCardForCategory(live, cat)
+          : { rate: 0, card: null };
+        const rateLabel = rateInfo.card
+          ? `${rateInfo.rate}×`
+          : editable
+            ? '0×'
+            : '';
+        return `
+        <label class="earn-pref-row">
+          <span class="earn-pref-cat">${cat}</span>
+          <select data-earn-cat="${cat}" ${editable ? '' : 'disabled'}>
+            <option value="">Auto (best rate)</option>
+            ${cur.cards
+              .map((c) => {
+                const def = CREDIT_CARDS.find((x) => x.id === c.id) || c;
+                const r = game.cardEarnRate
+                  ? game.cardEarnRate(def, cat)
+                  : def.earn && def.earn[cat] != null
+                    ? def.earn[cat]
+                    : def.earn && def.earn.everything != null
+                      ? def.earn.everything
+                      : 0;
+                return `<option value="${c.id}" ${
+                  selected === c.id ? 'selected' : ''
+                }>${c.name} (${r}×)</option>`;
+              })
+              .join('')}
+          </select>
+          <span class="earn-pref-rate muted">${rateLabel}</span>
+        </label>`;
+      }).join('')}
+    </div>
+  `;
+
+  if (editable) {
+    el.querySelectorAll('select[data-earn-cat]').forEach((sel) => {
+      sel.onchange = () => {
+        try {
+          game.setEarnPref(sel.dataset.earnCat, sel.value || null);
+          toast(
+            sel.value
+              ? `${sel.dataset.earnCat} → ${sel.options[sel.selectedIndex].text}`
+              : `${sel.dataset.earnCat} → Auto (best rate)`
+          );
+          renderAll();
+        } catch (e) {
+          toast(e.message, true);
+        }
+      };
+    });
+  }
+}
+
+function suggestNextMove(cur, snap) {
+  if (!cur.turn || cur.isBot) return '';
+  const t = cur.turn;
+  if (!t.incomeDone) {
+    return 'Income runs automatically each turn.';
+  }
+  if (t.pendingTickets) return 'Keep at least one ticket near cities you can reach.';
+
+  const banks = Object.values(cur.banks || {}).reduce((s, v) => s + (v || 0), 0);
+  const air = Object.values(cur.airlines || {}).reduce((s, v) => s + (v || 0), 0);
+  const hot = Object.values(cur.hotels || {}).reduce((s, v) => s + (v || 0), 0);
+
+  // Ticket targets (ordered: origin before destination)
+  const open = cur.tickets || [];
+  const needCity = (() => {
+    for (const tk of open) {
+      if (!tk.originDone) return tk.from;
+      if (!tk.destDone) return tk.to;
+    }
+    return null;
+  })();
+  const race = (() => {
+    const journey = cur.journey || [];
+    for (const tk of snap.raceGoals || []) {
+      let o = false;
+      let d = false;
+      for (const c of journey) {
+        if (!o) {
+          if (c === tk.from) o = true;
+        } else if (c === tk.to) {
+          d = true;
+          break;
+        }
+      }
+      if (!o) return { ...tk, next: tk.from };
+      if (!d) return { ...tk, next: tk.to };
+    }
+    return null;
+  })();
+
+  if ((t.freeTransferLeft || 0) > 0 && banks >= 1000 && air < 10000) {
+    const bank =
+      cur.cards[0]?.bank ||
+      Object.entries(cur.banks).sort((a, b) => b[1] - a[1])[0]?.[0] ||
+      'chase';
+    const partners = TRANSFERS[bank] || {};
+    const airPartner = Object.keys(partners).find((p) => partners[p].type === 'airline');
+    if (airPartner) {
+      return `Free transfer: move ${BANKS[bank]?.name || bank} → ${airPartner} so you can fly.`;
+    }
+  }
+  if ((t.travelLeft || 0) > 0 && air >= 5000 && needCity) {
+    return `Travel: fly to ${needCity} (tickets are ordered: origin → destination).`;
+  }
+  if ((t.travelLeft || 0) > 0 && air >= 5000 && race) {
+    return `Race: fly to ${race.next} for 🏁 ${race.from}→${race.to} (origin first).`;
+  }
+  if ((t.travelLeft || 0) > 0 && hot >= 15000) {
+    return 'Travel: book a signature hotel here (or fly to one) — stays score well.';
+  }
+  if ((t.freeTransferLeft || 0) > 0 && banks >= 1000 && hot < 15000) {
+    return 'Free transfer into a hotel program, then Travel to stay for VP.';
+  }
+  if ((t.buildLeft || 0) > 0 && cur.cards.length < 2 && (snap.round || 1) <= 4) {
+    return 'Build: apply for a second card to diversify banks / earn rates.';
+  }
+  if ((t.buildLeft || 0) > 0 && open.length === 0) {
+    return 'Build: draw trip tickets so you have private goals to race.';
+  }
+  if ((t.travelLeft || 0) === 0 && (t.buildLeft || 0) === 0) {
+    return 'Actions done — End Turn when ready.';
+  }
+  return 'Transfer (free) to fund miles/hotels, then use Travel to score.';
+}
+
+function tutorialSeen() {
+  try {
+    return localStorage.getItem(TUTORIAL_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+function markTutorialSeen() {
+  try {
+    localStorage.setItem(TUTORIAL_KEY, '1');
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+function maybeShowTutorial(cur, snap) {
+  const overlay = $('#tutorial-overlay');
+  if (!overlay) return;
+  if (cur.isBot || game.phase !== 'playing') {
+    overlay.classList.remove('show');
+    return;
+  }
+  if (tutorialSeen() && tutorialStep >= 3) {
+    overlay.classList.remove('show');
+    return;
+  }
+  // Show welcome once per browser until dismissed
+  if (!tutorialSeen() && tutorialStep === 0 && snap.round === 1) {
+    showTutorialCard(cur);
+  }
+}
+
+function showTutorialCard(cur) {
+  const overlay = $('#tutorial-overlay');
+  if (!overlay) return;
+  const tip =
+    STRATEGY_TIPS[cur.character.id] ||
+    'Transfer bank points → fly to ticket cities → book hotels for VP.';
+  overlay.innerHTML = `
+    <div class="tutorial-card">
+      <h2>How a turn works</h2>
+      <ol class="tutorial-steps">
+        <li><strong>Income</strong> — automatic lifestyle roll; set earn prefs (card per category).</li>
+        <li><strong>Free transfer</strong> — move points into airlines/hotels (once, free).</li>
+        <li><strong>Build</strong> — apply for a card, draw tickets, or rest (+points).</li>
+        <li><strong>Travel</strong> — book a flight or a signature hotel stay.</li>
+      </ol>
+      <p class="tutorial-goal"><strong>Win by VP:</strong> complete private tickets, claim 🏁 race goals, and book hotels. Leftover points convert poorly.</p>
+      <p class="char-tip"><em>${cur.character.name}:</em> ${tip}</p>
+      <p class="muted">Award seats are limited (2/route each round) — popular flights are a race.</p>
+      <div class="tutorial-actions">
+        <button type="button" class="btn primary" id="btn-tutorial-go">Got it — play</button>
+        <button type="button" class="btn" id="btn-tutorial-skip">Don't show again</button>
+      </div>
+    </div>
+  `;
+  overlay.classList.add('show');
+  $('#btn-tutorial-go').onclick = () => {
+    tutorialStep = 3;
+    overlay.classList.remove('show');
+  };
+  $('#btn-tutorial-skip').onclick = () => {
+    markTutorialSeen();
+    tutorialStep = 3;
+    overlay.classList.remove('show');
+  };
+}
+
 function renderPhasePanel(cur, snap) {
   const panel = $('#phase-panel');
   if (!cur.turn) return;
 
   // Bot turn — human controls locked
   if (cur.isBot) {
+    const inc = cur.turn.lastIncome;
     panel.innerHTML = `
       <h3>🤖 Bot turn</h3>
       <p><strong>${cur.name}</strong> (${cur.character.name}) is playing automatically…</p>
       <p class="muted">Event: ${cur.turn.event ? cur.turn.event.name : '—'}</p>
-      <div class="spend-roll-box">
-        <div class="spend-roll-label">Lifestyle spend</div>
-        <div class="spend-roll-chips">${formatSpendRollHtml(cur.turn.spendRoll)}</div>
-      </div>
-      <p class="char-tip">Strategy: complete tickets by flying to both cities, transfer points, book hotels for VP, open a second card when useful.</p>
+      ${
+        inc
+          ? `<div class="spend-roll-box"><div class="spend-roll-label">Auto income +${fmt(inc.totalEarned)}</div>
+             <div class="spend-roll-chips">${formatSpendRollHtml(cur.turn.spendRoll)}</div></div>`
+          : ''
+      }
+      <p class="char-tip">Bots also race 🏁 public goals and compete for award seats.</p>
     `;
     return;
   }
 
+  // Income is automatic at turn start — show summary then actions
   if (!cur.turn.incomeDone) {
-    panel.innerHTML = `
-      <h3>Phase 2 — Income</h3>
-      <p class="char-tip"><em>${cur.character.name}</em> lifestyle roll — categories appear by your spend odds. Earn = spend × <strong>card rate</strong> (0× without a card).</p>
-      <div class="spend-roll-box">
-        <div class="spend-roll-label">This turn’s spending</div>
-        <div class="spend-roll-chips">${formatSpendRollHtml(cur.turn.spendRoll)}</div>
-      </div>
-      ${
-        !cur.cards.length
-          ? `<p class="bonus-tag" style="color:var(--danger)!important">No cards held — income will earn 0 pts. Apply for a card after income!</p>`
-          : ''
-      }
-      <div class="income-actions">
-        <button type="button" class="btn primary" id="btn-auto-income">Earn points on this spend</button>
-        <button type="button" class="btn" id="btn-reroll-spend" ${
-          (cur.turn.spendRerollsLeft || 0) <= 0 ? 'disabled' : ''
-        }>Re-roll lifestyle (${cur.turn.spendRerollsLeft || 0} left)</button>
-        <button type="button" class="btn" id="btn-custom-income">Adjust allocation…</button>
-      </div>
-    `;
-    $('#btn-auto-income').onclick = () => {
-      try {
-        const p = game.currentPlayer;
-        game.doIncome(game.autoAllocate(p));
-        renderAll();
-      } catch (e) {
-        toast(e.message, true);
-      }
-    };
-    $('#btn-reroll-spend').onclick = () => {
-      try {
-        game.rerollSpend();
-        renderAll();
-        toast('Lifestyle spend re-rolled');
-      } catch (e) {
-        toast(e.message, true);
-      }
-    };
-    $('#btn-custom-income').onclick = () => openIncomeModal();
+    // Safety: should not happen; force income
+    try {
+      game.doIncome();
+      renderAll();
+    } catch (e) {
+      panel.innerHTML = `<p class="bonus-tag" style="color:var(--danger)!important">${e.message}</p>`;
+    }
     return;
   }
 
@@ -904,17 +1271,80 @@ function renderPhasePanel(cur, snap) {
     return;
   }
 
-  // Actions
-  const disabled = cur.turn.actionsLeft <= 0;
+  // Actions — always read LIVE turn (not a stale snapshot copy)
+  const liveTurn = game.currentPlayer && game.currentPlayer.turn;
+  const tAct = liveTurn || cur.turn || {};
+  const freeLeft = Number(tAct.freeTransferLeft) || 0;
+  const buildLeft = Number(tAct.buildLeft) || 0;
+  const travelLeft = Number(tAct.travelLeft) || 0;
+  const freeX = freeLeft > 0;
+  const buildOk = buildLeft > 0;
+  const travelOk = travelLeft > 0;
+  const canTransfer = freeX || buildOk;
+  const restPts = GAME_CONFIG.restPlanPoints || 3000;
+  const lastInc = tAct.lastIncome || cur.turn.lastIncome;
+  const incomeHtml = lastInc
+    ? `<div class="spend-roll-box">
+        <div class="spend-roll-label">Auto income +${fmt(lastInc.totalEarned)} pts</div>
+        <div class="spend-roll-chips">${formatSpendRollHtml(cur.turn.spendRoll)}</div>
+        ${
+          lastInc.lines && lastInc.lines.length
+            ? `<ul class="income-lines">${lastInc.lines
+                .map(
+                  (l) =>
+                    `<li><span class="spend-cat">${l.cat}</span> $${fmt(l.spend)} × ${
+                      l.rate
+                    }× ${l.card || '—'} → <strong>${fmt(l.pts)}</strong></li>`
+                )
+                .join('')}</ul>`
+            : ''
+        }
+        <p class="muted" style="margin:0.35rem 0 0;font-size:0.75rem">Change earn prefs under Credit cards (applies next income).</p>
+      </div>`
+    : '';
+
   panel.innerHTML = `
-    <h3>Phase 3 — Actions <small>(${cur.turn.actionsLeft} left)</small></h3>
-    <div class="action-grid">
-      <button type="button" class="btn action" data-act="card" ${disabled ? 'disabled' : ''}>💳 Apply for Card</button>
-      <button type="button" class="btn action" data-act="transfer" ${disabled ? 'disabled' : ''}>🔄 Transfer Points</button>
-      <button type="button" class="btn action" data-act="flight" ${disabled ? 'disabled' : ''}>✈️ Book Flight</button>
-      <button type="button" class="btn action" data-act="hotel" ${disabled ? 'disabled' : ''}>🏨 Book Hotel</button>
-      <button type="button" class="btn action" data-act="tickets" ${disabled ? 'disabled' : ''}>🎫 Draw Trip Tickets</button>
-      <button type="button" class="btn action" data-act="rest" ${disabled ? 'disabled' : ''}>📝 Rest / Plan (+1k)</button>
+    <h3>Actions</h3>
+    ${incomeHtml}
+    <p class="action-economy muted">
+      ${freeX ? `<span class="pill free">Free transfer ×${freeLeft}</span>` : '<span class="pill used">No free transfer</span>'}
+      <span class="pill ${buildOk ? 'ok' : 'used'}">Build ${buildLeft}</span>
+      <span class="pill ${travelOk ? 'ok' : 'used'}">Travel ${travelLeft}</span>
+    </p>
+    <div class="action-section">
+      <div class="action-label">↺ Transfer ${freeX ? '(free)' : buildOk ? '(costs Build)' : '(none left)'}</div>
+      <button type="button" class="btn action" data-act="transfer" ${
+        canTransfer ? '' : 'disabled'
+      } title="${
+        canTransfer
+          ? 'Move bank points into airline miles or hotel points'
+          : 'No free transfer or Build left'
+      }">🔄 Transfer Points</button>
+    </div>
+    <div class="action-section">
+      <div class="action-label">Build ${buildOk ? `×${buildLeft}` : '— used'}</div>
+      <div class="action-grid">
+        <button type="button" class="btn action" data-act="card" ${
+          buildOk ? '' : 'disabled'
+        } title="Open a new credit card (signup + earn rates)">💳 Apply for Card</button>
+        <button type="button" class="btn action" data-act="tickets" ${
+          buildOk ? '' : 'disabled'
+        } title="Draw 2 private trip tickets, keep ≥1">🎫 Draw Tickets</button>
+        <button type="button" class="btn action" data-act="rest" ${
+          buildOk ? '' : 'disabled'
+        } title="Gain bank points without traveling">📝 Rest (+${fmt(restPts)})</button>
+      </div>
+    </div>
+    <div class="action-section">
+      <div class="action-label">Travel ${travelOk ? `×${travelLeft}` : '— used'}</div>
+      <div class="action-grid">
+        <button type="button" class="btn action" data-act="flight" ${
+          travelOk ? '' : 'disabled'
+        } title="Fly (uses 1 award ticket for that airline this round)">✈️ Book Flight</button>
+        <button type="button" class="btn action" data-act="hotel" ${
+          travelOk ? '' : 'disabled'
+        } title="1 night at a signature hotel in your city">🏨 Book Hotel</button>
+      </div>
     </div>
     <button type="button" class="btn primary end-turn" id="btn-end-turn">End Turn →</button>
   `;
@@ -995,63 +1425,6 @@ function openModal(title, bodyHtml, onConfirm) {
 
 function closeModal() {
   $('#modal-overlay').classList.remove('open');
-}
-
-function openIncomeModal() {
-  const p = game.currentPlayer;
-  const roll = (p.turn && p.turn.spendRoll) || {};
-  // Categories that can appear for this character + any rolled
-  const profileCats = Object.keys(p.character.spendProfile || { everything: 1 });
-  const cats = [
-    ...new Set([
-      ...profileCats,
-      ...Object.keys(roll),
-      'dining',
-      'groceries',
-      'gas',
-      'travel',
-      'transit',
-      'rent',
-      'hotels',
-      'flights',
-      'everything',
-    ]),
-  ];
-  const rates = cats.map((c) => {
-    const r = game.bestEarnRate(p, c);
-    return {
-      c,
-      rate: r.rate,
-      card: r.card ? r.card.name : '—',
-      rolled: roll[c] || 0,
-    };
-  });
-
-  openModal(
-    'Adjust income allocation',
-    `
-      <p>Pre-filled from this turn’s lifestyle roll. Total ≤ $${GAME_CONFIG.budgetPerTurn}. Earn = spend × <strong>card</strong> rate (0× without a card).</p>
-      ${rates
-        .map(
-          (x) => `
-        <label class="field">
-          ${x.c}
-          <span class="muted">(${x.rate}× ${x.card}${x.rolled ? ` · rolled $${fmt(x.rolled)}` : ''})</span>
-          <input type="number" min="0" max="${GAME_CONFIG.budgetPerTurn}" value="${x.rolled || 0}" data-cat="${x.c}" />
-        </label>
-      `
-        )
-        .join('')}
-    `,
-    () => {
-      const alloc = {};
-      $$('#modal-body [data-cat]').forEach((inp) => {
-        alloc[inp.dataset.cat] = +inp.value || 0;
-      });
-      // Keep turn roll in sync for display consistency after? income ends anyway
-      game.doIncome(alloc);
-    }
-  );
 }
 
 function openCardModal() {
@@ -1176,7 +1549,8 @@ function openFlightModal() {
   openModal(
     `Book flight from ${from}`,
     `
-      <p class="muted">Nonstop or <strong>1 stop</strong> (same airline). Visit both ticket cities to complete trips.</p>
+      <p class="muted">Nonstop or <strong>1 stop</strong> (same airline). Each airline has <strong>${GAME_CONFIG.awardsPerAirlinePerRound || 2} award tickets/round</strong> — one itinerary (incl. connection) uses 1 ticket.</p>
+      <p class="muted" style="margin-top:0.25rem">Left this round: UA ${awardsLeft('united')} · DL ${awardsLeft('delta')} · AA ${awardsLeft('american')}</p>
       <label class="field flight-search-field">
         Search destination
         <input type="search" id="flight-search" placeholder="e.g. Miami, LAX, Denver…" autocomplete="off" />
@@ -1210,8 +1584,13 @@ function openFlightModal() {
         : `Landed in ${res.to}!`;
       if (res.completedTrips && res.completedTrips.length) {
         msg +=
-          ' · Ticket complete: ' +
-          res.completedTrips.map((t) => `${t.from}→${t.to} (+${t.points} VP)`).join(', ');
+          ' · Ticket: ' +
+          res.completedTrips.map((t) => `${t.from}→${t.to}`).join(', ');
+      }
+      if (res.raceClaims && res.raceClaims.length) {
+        msg +=
+          ' · 🏁 Race claimed: ' +
+          res.raceClaims.map((t) => `${t.from}→${t.to}`).join(', ');
       }
       toast(msg);
     }
@@ -1312,20 +1691,59 @@ function openFlightModal() {
         const airLabels = opt.airlines
           .map((a) => (AIRLINES[a] ? AIRLINES[a].short : a))
           .join('/');
-        const helpsTicket = (p.tickets || []).some(
-          (t) => t.from === opt.to || t.to === opt.to
-        );
+        const helpsTicket = (p.tickets || []).some((t) => {
+          // Ordered: only highlight if this city is the next check on the ticket
+          const j = p.journey || [];
+          let o = false;
+          for (const c of j) {
+            if (!o) {
+              if (c === t.from) o = true;
+            } else if (c === t.to) {
+              return false; // already complete path
+            }
+          }
+          if (!o) return opt.to === t.from || opt.via === t.from;
+          return opt.to === t.to || opt.via === t.to;
+        });
+        const helpsRace = (game.raceGoals || []).some((t) => {
+          const j = p.journey || [];
+          let o = false;
+          for (const c of j) {
+            if (!o) {
+              if (c === t.from) o = true;
+            } else if (c === t.to) {
+              return false;
+            }
+          }
+          if (!o) return opt.to === t.from || opt.via === t.from;
+          return opt.to === t.to || opt.via === t.to;
+        });
+        // Airline award inventory (any listed airline still open?)
+        const openAirs = (opt.airlines || []).filter((a) => awardsLeft(a) > 0);
+        const soldOut = openAirs.length === 0;
+        const awardHint = soldOut
+          ? 'FULL'
+          : openAirs
+              .map((a) => {
+                const sh =
+                  a === 'united' ? 'UA' : a === 'delta' ? 'DL' : a === 'american' ? 'AA' : a;
+                return `${sh}:${awardsLeft(a)}`;
+              })
+              .join(' ');
         return `
-          <label class="card-option">
+          <label class="card-option ${soldOut ? 'sold-out' : ''}">
             <input type="radio" name="flight" value="${idx}"
               data-to="${opt.to}"
               data-via="${opt.via || ''}"
-              data-airlines='${JSON.stringify(opt.airlines)}'
+              data-airlines='${JSON.stringify(openAirs.length ? openAirs : opt.airlines)}'
               data-cost="${opt.baseCost}"
-              data-stops="${opt.stops}" />
+              data-stops="${opt.stops}"
+              ${soldOut ? 'disabled' : ''} />
             <div>
-              <strong>${path}</strong> (${destName})${helpsTicket ? ' 🎫' : ''}
-              <p>${stopLabel} · ${airLabels} · base ${fmt(opt.baseCost)} mi${opt.stops ? ' · 2 segments' : ''}</p>
+              <strong>${path}</strong> (${destName})${helpsTicket ? ' 🎫' : ''}${
+                helpsRace ? ' 🏁' : ''
+              } · ${awardHint}
+              <p>${stopLabel} · ${airLabels} · base ${fmt(opt.baseCost)} mi${opt.stops ? ' · 2 segments' : ''} · 1 award ticket</p>
             </div>
           </label>
         `;
@@ -1334,10 +1752,17 @@ function openFlightModal() {
     list.querySelectorAll('input[name=flight]').forEach((r) => {
       r.onchange = syncAirlines;
     });
-    const first = list.querySelector('input[name=flight]');
+    const first = list.querySelector('input[name=flight]:not([disabled])');
     if (first) {
       first.checked = true;
       syncAirlines();
+    } else {
+      const airSel = $('#flight-airline');
+      if (airSel) airSel.innerHTML = '';
+      const costEl = $('#flight-cost');
+      if (costEl)
+        costEl.textContent =
+          'No airline has award tickets left for these routes this round.';
     }
   };
 
@@ -1350,18 +1775,22 @@ function openFlightModal() {
       cost = Math.floor(cost * 0.85);
     }
     if (p.character.special === 'cheap_flight' && flightsThisTurn === 0) {
-      cost = Math.floor(cost * 0.85);
+      cost = Math.floor(cost * 0.8);
     }
     const segs = +sel.dataset.stops === 1 ? 2 : 1;
     $('#flight-airline').innerHTML = airlines
       .map((a) => {
         const bal = p.airlines[a] || 0;
-        const ok = bal >= cost;
+        const aw = awardsLeft(a);
+        const ok = bal >= cost && aw > 0;
         const name = AIRLINES[a] ? AIRLINES[a].name : a;
-        return `<option value="${a}" ${ok ? '' : 'disabled'}>${name} (${fmt(bal)} mi)${ok ? '' : ' — short'}</option>`;
+        let why = '';
+        if (aw <= 0) why = ' — no award tickets';
+        else if (bal < cost) why = ' — short miles';
+        return `<option value="${a}" ${ok ? '' : 'disabled'}>${name} (${fmt(bal)} mi · ${aw} tix)${why}</option>`;
       })
       .join('');
-    $('#flight-cost').textContent = `Cost this turn: ${fmt(cost)} miles · ${segs} segment${segs > 1 ? 's' : ''} · 1 action`;
+    $('#flight-cost').textContent = `Cost: ${fmt(cost)} miles · ${segs} segment${segs > 1 ? 's' : ''} · 1 award ticket · Travel`;
   };
 
   $('#flight-filter').onchange = renderFlightList;
@@ -1389,7 +1818,7 @@ function openHotelModal() {
   let hotelMult =
     ((p.turn && p.turn.hotelMult) || 1) *
     (GAME_CONFIG.hotelCostMultiplier || 1);
-  if (p.character.special === 'group_rate') hotelMult *= 0.9;
+  if (p.character.special === 'group_rate') hotelMult *= 0.85;
   const vpMult = GAME_CONFIG.hotelVpMultiplier || 1;
   const freeNight = p.turn && p.turn.freeNightAvailable;
 
@@ -1481,6 +1910,7 @@ function wireNav() {
 
   $('#start-game').onclick = () => {
     try {
+      ensureMusic();
       botRunning = false;
       game.startGame(setupSelections);
       showScreen('screen-game');
@@ -1498,6 +1928,7 @@ function wireNav() {
 
   // Quick demo: 1 human + 2 bots
   $('#btn-quick-demo')?.addEventListener('click', () => {
+    ensureMusic();
     const picks = [...CHARACTERS].sort(() => Math.random() - 0.5).slice(0, 3);
     setupSelections = picks.map((c, i) => ({
       characterId: c.id,

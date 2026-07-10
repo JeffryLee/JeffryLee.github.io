@@ -31,11 +31,11 @@
               <button type="button" class="btn" id="btn-quick-demo">
                 Quick Demo (you + 2 bots)
               </button>
-              <button type="button" class="btn primary" data-music-mute id="btn-music-setup">
-                ▶ Play music
+              <button type="button" class="btn primary" data-music-mute id="btn-music-setup" title="Play music">
+                ▶ Play
               </button>
               <span id="music-status" class="muted" style="font-size:0.8rem;align-self:center"
-                >Music starts when you click Play</span
+                >Click anywhere to start music</span
               >
             </div>
           </div>
@@ -86,13 +86,27 @@
             steal, flash sale…).
           </li>
           <li>
-            <strong>Income</strong> — lifestyle roll picks spend categories by
-            character odds; earn only from credit card rates (0× with no card).
+            <strong>Income (automatic)</strong> — lifestyle roll by character
+            odds; points hit the card you assigned per category (or best rate).
+            No allocation or re-roll.
           </li>
           <li>
-            <strong>Actions (2)</strong> — apply for a card, transfer points,
-            book a flight (nonstop or 1-stop same airline), book a hotel, draw
-            trip tickets, or rest (+1,000 points).
+            <strong>Free transfer</strong> — once per turn, move bank points
+            into airlines/hotels (extra transfers cost Build).
+          </li>
+          <li>
+            <strong>Build</strong> — apply for a card, draw private tickets, or
+            rest (+points).
+          </li>
+          <li>
+            <strong>Travel</strong> — book a flight (nonstop or 1-stop) or a
+            signature hotel. Each airline has <strong>2 award tickets/round</strong>
+            (a connection still costs 1 ticket).
+          </li>
+          <li>
+            <strong>Race</strong> — tickets are <strong>ordered</strong>
+            (origin first, then destination). First to finish a 🏁 race goal
+            claims it.
           </li>
           <li><strong>End turn</strong> — next player.</li>
         </ol>
@@ -186,11 +200,12 @@
         <div class="meta-tags">
           <span class="tag gold" id="round-label">Round 1 / 10</span>
           <span class="tag" id="turn-label">—</span>
-          <span class="tag" id="actions-left">2 actions</span>
+          <span class="tag" id="awards-left">Awards UA · DL · AA</span>
+          <span class="tag" id="actions-left">Build · Travel</span>
         </div>
         <div id="players-bar"></div>
-        <button type="button" class="btn" data-music-mute id="btn-music-game">
-          ▶ Play music
+        <button type="button" class="btn" data-music-mute id="btn-music-game" title="Play music">
+          ▶ Play
         </button>
         <button type="button" class="btn" id="btn-how-to">Rules</button>
       </header>
@@ -202,14 +217,20 @@
             <span class="dl">Delta routes</span>
             <span class="aa">American routes</span>
             <span>Solid = your flown segments</span>
+            <span>2 award tickets / airline / round</span>
           </div>
           <svg id="map-svg" xmlns="http://www.w3.org/2000/svg"></svg>
           <div id="city-info"></div>
         </div>
 
         <aside class="side-panel">
+          <div id="turn-checklist" class="turn-checklist"></div>
+
           <h3>Event</h3>
           <div id="event-display"></div>
+
+          <h3>🏁 Race goals <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(first visit both)</span></h3>
+          <div id="race-goals"></div>
 
           <h3>Bank points</h3>
           <div class="bal-row" id="bank-balances"></div>
@@ -223,7 +244,10 @@
           <h3>Credit cards</h3>
           <div id="my-cards"></div>
 
-          <h3>Trip tickets</h3>
+          <h3>Earn prefs <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(card per category)</span></h3>
+          <div id="earn-prefs"></div>
+
+          <h3>Private tickets</h3>
           <div id="my-tickets"></div>
 
           <h3>Stats</h3>
@@ -273,9 +297,12 @@
 
     <div id="toast" class="toast"></div>
 
+    <!-- First-game onboarding -->
+    <div id="tutorial-overlay" class="tutorial-overlay" aria-live="polite"></div>
+
     <!-- Background music (controlled by js/music.js) -->
     <audio id="bg-music" loop playsinline preload="auto"></audio>
 
-    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/ui.js?v=chase1"></script>
   </body>
 </html>

@@ -836,6 +836,159 @@ button {
   border-color: var(--gold);
 }
 
+/* Turn checklist + onboarding */
+.turn-checklist {
+  background: linear-gradient(145deg, #152238, #0f1a30);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.82rem;
+}
+
+.turn-checklist .check-title {
+  font-weight: 700;
+  color: var(--gold-soft);
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.turn-checklist .check-row {
+  padding: 0.15rem 0;
+  color: var(--cream-dim);
+}
+
+.turn-checklist .check-row.done {
+  color: #6fbf7a;
+}
+
+.turn-checklist .check-row.now {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.suggest-tip {
+  margin-top: 0.45rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(255, 184, 28, 0.1);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 6px 6px 0;
+  color: var(--cream);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.action-economy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.55rem;
+}
+
+.pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--navy-2);
+}
+
+.pill.free,
+.pill.ok {
+  border-color: #6fbf7a;
+  color: #9fd8a6;
+}
+
+.pill.used {
+  opacity: 0.55;
+}
+
+.action-section {
+  margin-bottom: 0.55rem;
+}
+
+.action-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  margin-bottom: 0.3rem;
+}
+
+.ticket.race {
+  border-color: #ffb81c;
+  background: rgba(255, 184, 28, 0.08);
+}
+
+.ticket.prog-half {
+  border-color: var(--gold-soft);
+}
+
+.ticket.prog-ready {
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+.card-option.sold-out {
+  opacity: 0.45;
+}
+
+.tutorial-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(5, 10, 22, 0.72);
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.tutorial-overlay.show {
+  display: flex;
+}
+
+.tutorial-card {
+  max-width: 420px;
+  width: 100%;
+  background: var(--panel);
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.tutorial-card h2 {
+  margin: 0 0 0.75rem;
+  color: var(--gold-soft);
+  font-size: 1.25rem;
+}
+
+.tutorial-steps {
+  margin: 0 0 0.85rem;
+  padding-left: 1.2rem;
+  line-height: 1.45;
+  color: var(--cream);
+  font-size: 0.9rem;
+}
+
+.tutorial-steps li {
+  margin-bottom: 0.35rem;
+}
+
+.tutorial-goal {
+  font-size: 0.88rem;
+  line-height: 1.4;
+  margin: 0 0 0.65rem;
+}
+
+.tutorial-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
 #phase-panel {
   background: var(--navy);
   border: 1px solid var(--gold);
@@ -915,6 +1068,66 @@ button {
 .spend-chip strong {
   font-family: var(--mono);
   color: var(--gold-soft);
+}
+
+.income-lines {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  font-size: 0.78rem;
+}
+
+.income-lines li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.4rem;
+  padding: 0.15rem 0;
+  color: var(--cream-dim);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.income-lines .spend-cat {
+  text-transform: capitalize;
+  color: var(--gold-soft);
+  min-width: 4.5rem;
+}
+
+.earn-pref-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.earn-pref-row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr auto;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.earn-pref-cat {
+  text-transform: capitalize;
+  color: var(--cream-dim);
+}
+
+.earn-pref-row select {
+  width: 100%;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.3rem;
+  background: var(--navy);
+  color: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.earn-pref-rate {
+  font-size: 0.68rem;
+  max-width: 5.5rem;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .char-tip {
@@ -1202,7 +1415,7 @@ button {
 }
 
 .legend .ua::before {
-  background: #002244;
+  background: #ffb81c;
 }
 .legend .dl::before {
   background: #c8102e;

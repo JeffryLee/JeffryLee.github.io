@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Card balance sim</title>
+    <style>
+      body {
+        font-family: ui-monospace, Menlo, monospace;
+        background: #0d1528;
+        color: #f0e6d3;
+        padding: 1.2rem;
+        line-height: 1.4;
+      }
+      pre { white-space: pre-wrap; max-width: 56rem; }
+    </style>
+  </head>
+  <body>
+    <pre id="out">Running card balance sim…</pre>
+    <script type="module">
+      import { Game, CHARACTERS, CREDIT_CARDS, GAME_CONFIG } from './js/game.js?v=chase1';
+      import { STARTER_CARDS } from './js/data.js?v=chase1';
+      import { playBotActions } from './js/bot.js?v=chase1';
+
+      const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+
+      function runGame(charIds) {
+        const g = new Game();
+        g.startGame(
+          charIds.map((id) => ({
+            characterId: id,
+            name: `Bot ${id}`,
+            isBot: true,
+          }))
+        );
+
+        const opened = {}; // cardId -> count
+        const signups = {};
+        const origApply = g.applyForCard.bind(g);
+        g.applyForCard = (id) => {
+          const r = origApply(id);
+          opened[id] = (opened[id] || 0) + 1;
+          return r;
+        };
+        const origClaim = g.maybeClaimSignup.bind(g);
+        g.maybeClaimSignup = (player, card) => {
+          const before = player.cardBonusClaimed[card.id];
+          origClaim(player, card);
+          if (!before && player.cardBonusClaimed[card.id]) {
+            signups[card.id] = (signups[card.id] || 0) + 1;
+          }
+        };
+
+        // Starter cards
+        for (const p of g.players) {
+          for (const c of p.cards) {
+            opened[c.id] = (opened[c.id] || 0) + 1;
+          }
+        }
+
+        let guard = 0;
+        while (g.phase === 'playing' && guard++ < 800) {
+          playBotActions(g);
+          g.consumeFlightAnims();
+          if (g.endTurn().gameOver) break;
+        }
+
+        const snap = g.snapshot();
+        const rows = (snap.finalScores || []).map((s) => {
+          const p = g.players.find((x) => x.id === s.id);
+          const banks = p ? { ...p.banks } : {};
+          const air = p ? { ...p.airlines } : {};
+          const hot = p ? { ...p.hotels } : {};
+          const bankSum = Object.values(banks).reduce((a, b) => a + b, 0);
+          const airSum = Object.values(air).reduce((a, b) => a + b, 0);
+          const hotSum = Object.values(hot).reduce((a, b) => a + b, 0);
+          return {
+            character: s.character,
+            charId: p.character.id,
+            vp: s.vp,
+            cards: (p.cards || []).map((c) => c.id),
+            starter: STARTER_CARDS[p.character.id],
+            bankSum,
+            airSum,
+            hotSum,
+            banks,
+          };
+        });
+        return { rows, opened, signups };
+      }
+
+      const ids = CHARACTERS.map((c) => c.id);
+      const games = 40;
+      const allVp = [];
+      const byChar = {};
+      const cardOpen = {};
+      const cardSignup = {};
+      const bankTotals = { chase: 0, amex: 0, citi: 0, bilt: 0 };
+      const pairCardVp = {}; // cardId -> list of final VP when held at end
+
+      for (let i = 0; i < games; i++) {
+        const pick = [];
+        for (let j = 0; j < 3; j++) pick.push(ids[(i + j) % ids.length]);
+        const uniq = [...new Set(pick)];
+        while (uniq.length < 3) {
+          for (const id of ids) {
+            if (!uniq.includes(id)) uniq.push(id);
+            if (uniq.length >= 3) break;
+          }
+        }
+        const { rows, opened, signups } = runGame(uniq.slice(0, 3));
+        for (const [k, v] of Object.entries(opened)) {
+          cardOpen[k] = (cardOpen[k] || 0) + v;
+        }
+        for (const [k, v] of Object.entries(signups)) {
+          cardSignup[k] = (cardSignup[k] || 0) + v;
+        }
+        for (const r of rows) {
+          allVp.push(r.vp);
+          byChar[r.character] = byChar[r.character] || [];
+          byChar[r.character].push(r.vp);
+          for (const b of Object.keys(bankTotals)) {
+            bankTotals[b] += r.banks[b] || 0;
+          }
+          for (const cid of r.cards) {
+            pairCardVp[cid] = pairCardVp[cid] || [];
+            pairCardVp[cid].push(r.vp);
+          }
+        }
+      }
+
+      const lines = [];
+      lines.push('Points Odyssey — CREDIT CARD balance sim');
+      lines.push(
+        `Games: ${games} × 3 bots | rounds=${GAME_CONFIG.maxRounds} budget=$${GAME_CONFIG.budgetPerTurn}`
+      );
+      lines.push(
+        `Overall VP avg ${avg(allVp).toFixed(1)}  range ${Math.min(...allVp)}–${Math.max(...allVp)}`
+      );
+      lines.push('');
+      lines.push('Character VP (kit balance check):');
+      const charRows = Object.entries(byChar)
+        .map(([ch, arr]) => ({ ch, avg: avg(arr), n: arr.length }))
+        .sort((a, b) => b.avg - a.avg);
+      const top = charRows[0].avg;
+      for (const r of charRows) {
+        lines.push(
+          `  ${r.ch.padEnd(16)} avg=${r.avg.toFixed(1).padStart(6)}  (${(
+            ((r.avg - top) / top) *
+            100
+          ).toFixed(0)}% vs lead)`
+        );
+      }
+      lines.push(
+        `  Character spread (best−worst): ${(top - charRows[charRows.length - 1].avg).toFixed(1)} VP`
+      );
+
+      lines.push('');
+      lines.push('Card open counts (starter + apply):');
+      const sortedOpen = Object.entries(cardOpen).sort((a, b) => b[1] - a[1]);
+      const totalOpens = sortedOpen.reduce((s, [, n]) => s + n, 0);
+      for (const [id, n] of sortedOpen) {
+        const def = CREDIT_CARDS.find((c) => c.id === id);
+        const su = cardSignup[id] || 0;
+        const holdVp = pairCardVp[id] || [];
+        lines.push(
+          `  ${id.padEnd(14)} opens=${String(n).padStart(3)} (${(
+            (100 * n) /
+            totalOpens
+          ).toFixed(0)}%)  signups=${su}  endVP_avg=${
+            holdVp.length ? avg(holdVp).toFixed(0) : '—'
+          }  ${def ? def.bank + ' ' + JSON.stringify(def.earn) : ''}`
+        );
+      }
+
+      lines.push('');
+      lines.push('End-game residual bank points (all players sum):');
+      const bankSum = Object.values(bankTotals).reduce((a, b) => a + b, 0) || 1;
+      for (const [b, v] of Object.entries(bankTotals).sort((a, b) => b[1] - a[1])) {
+        lines.push(
+          `  ${b.padEnd(8)} ${Math.round(v).toLocaleString().padStart(10)}  (${(
+            (100 * v) /
+            bankSum
+          ).toFixed(0)}%)`
+        );
+      }
+
+      // Theory table in-browser
+      lines.push('');
+      lines.push('Theory: expected pts / $5k on each character profile (new earn):');
+      const profiles = {};
+      for (const c of CHARACTERS) profiles[c.id] = c.spendProfile;
+      function rate(earn, cat) {
+        if (earn[cat] != null) return earn[cat];
+        return earn.everything || 0;
+      }
+      function expPts(earn, profile) {
+        const tw = Object.values(profile).reduce((a, b) => a + b, 0);
+        let p = 0;
+        for (const [cat, w] of Object.entries(profile)) {
+          p += 5000 * (w / tw) * rate(earn, cat);
+        }
+        return p;
+      }
+      lines.push(
+        '  ' +
+          'card'.padEnd(14) +
+          CHARACTERS.map((c) => c.id.slice(0, 6).padStart(7)).join('') +
+          '   avg'
+      );
+      const theory = CREDIT_CARDS.map((card) => {
+        const vals = CHARACTERS.map((ch) => expPts(card.earn, ch.spendProfile));
+        return { card, vals, avg: avg(vals) };
+      }).sort((a, b) => b.avg - a.avg);
+      for (const t of theory) {
+        lines.push(
+          '  ' +
+            t.card.id.padEnd(14) +
+            t.vals.map((v) => String(Math.round(v)).padStart(7)).join('') +
+            String(Math.round(t.avg)).padStart(6)
+        );
+      }
+      lines.push(
+        `  Earn avg spread (best−worst card): ${Math.round(
+          theory[0].avg - theory[theory.length - 1].avg
+        )} pts/turn`
+      );
+
+      lines.push('');
+      lines.push('NOTES:');
+      lines.push(
+        '- Flat 2× cards removed; Blue 1.75× / Double Cash 1.5× are baseline not best.'
+      );
+      lines.push(
+        '- Premium cards win on-profile; partner banks (UA/DL/AA) drive strategy.'
+      );
+      lines.push(
+        '- Signup ~2 income turns of premium earn (not half the game).'
+      );
+
+      const text = lines.join('\n');
+      document.getElementById('out').textContent = text;
+      console.log(text);
+    </script>
+  </body>
+</html>

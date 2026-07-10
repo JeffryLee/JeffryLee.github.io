@@ -6,6 +6,12 @@ Earn Chase / Amex / Citi / Bilt points from character-specific spending, apply f
 
 **Players:** 3–6 (hotseat) · **Rounds:** 10 · **Not affiliated** with any bank, hotel, or airline.
 
+## Play online
+
+**https://jeffrylee.github.io/points-odyssey/**
+
+Hosted on GitHub Pages from this site’s `points-odyssey/` folder.
+
 ## Play locally
 
 From this folder:
@@ -25,7 +31,8 @@ Open **http://localhost:8080**
 ### Quick start in-game
 
 1. Click characters to add 3–6 players (or **Quick Demo** for 3 random travelers).
-2. Each turn: resolve the event → income → up to 2 actions → end turn.
+2. Each turn: event → **auto income** (set earn prefs: card per category) → free transfer + Build + Travel → end turn.
+   Race public 🏁 goals; each airline has 2 award tickets/round (1 itinerary = 1 ticket).
 3. After 10 rounds, final scoring crowns the winner.
 
 ## Files
