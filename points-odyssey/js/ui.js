@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=spendui1';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=spendui1';
-import { playBotActions } from './bot.js?v=spendui1';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=spendui1';
+} from './game.js?v=fixload1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=fixload1';
+import { playBotActions } from './bot.js?v=fixload1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=fixload1';
 
 const game = new Game();
 let setupSelections = [];
@@ -72,8 +72,9 @@ function characterSkillLines(c) {
   }
   const desc = (c.specialDesc || '').trim();
   if (!desc) return [];
+  // Avoid lookbehind (breaks older Safari / some engines at parse time)
   return desc
-    .split(/(?<=\.)\s+/)
+    .split(/\.\s+/)
     .map((s) => s.replace(/\.$/, '').trim())
     .filter(Boolean);
 }
