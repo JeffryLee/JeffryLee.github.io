@@ -1,9 +1,10 @@
-# Hotel icon credits
+# Hotel brand icons
 
-Icons were generated with **Grok Imagine** (`image_edit` / image-to-image) from publicly available exterior reference photographs (primarily Wikimedia Commons / Openverse search results).
+Three shared cartoon brand badges (one per chain):
 
-Each icon is a stylized board-game UI asset — not a photograph of the real property and not affiliated with Hyatt, Marriott, Hilton, or any hotel brand.
+- `brands/hilton.jpg`
+- `brands/hyatt.jpg`
+- `brands/marriott.jpg`
 
-Reference metadata (when captured) is stored in `refs/meta.json`.
-
-If you redistribute this project, keep this notice alongside `assets/hotels/icons/`.
+Generated as simple monogram/mark badges for the Points Odyssey board-game UI.
+Individual property photos are not used — all hotels of a brand share the same icon.
