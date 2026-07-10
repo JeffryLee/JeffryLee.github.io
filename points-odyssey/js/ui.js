@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=rebal2';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=rebal2';
-import { playBotActions } from './bot.js?v=rebal2';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=rebal2';
+} from './game.js?v=rebal2b';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=rebal2b';
+import { playBotActions } from './bot.js?v=rebal2b';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=rebal2b';
 
 const game = new Game();
 let setupSelections = [];

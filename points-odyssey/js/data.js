@@ -149,7 +149,7 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'polished_routes',
     specialDesc:
-      'All award flights cost 15% fewer miles. Completing a private trip ticket grants +1 bonus VP (no race bonus).',
+      'All award flights cost 15% fewer miles. Completing a private trip ticket grants +1 bonus VP.',
     spendProfile: {
       travel: 35,
       dining: 25,
@@ -206,7 +206,7 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'dining_bonus',
     specialDesc:
-      'If any dining spend this turn: +1 VP (once/turn). No free bank dump — points come from card earn.',
+      'If any dining spend this turn: +1 VP (once/turn).',
     spendProfile: {
       dining: 45,
       groceries: 25,
