@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=allopt2';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=allopt2';
-import { playBotActions } from './bot.js?v=allopt2';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=allopt2';
+} from './game.js?v=skillbal1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=skillbal1';
+import { playBotActions } from './bot.js?v=skillbal1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=skillbal1';
 
 const game = new Game();
 let setupSelections = [];

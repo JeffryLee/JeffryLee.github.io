@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=allopt2';
+} from './data.js?v=skillbal1';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -627,7 +627,12 @@ export class Game {
 
       let pts = Math.floor(spend * rate);
 
-      // Landlord: rent on Bilt is at least 2×, then +35% Bilt earn (stacks with Rent Day event)
+      // Foodie: dining earn −30% (splurge tax; balances strong ticket fuel from dining profile)
+      if (p.character.special === 'dining_bonus' && cat === 'dining') {
+        pts = Math.floor(pts * 0.7);
+      }
+
+      // Landlord: rent on Bilt is at least 2×, then +25% Bilt earn (stacks with Rent Day event)
       let earnRate = rate;
       if (
         p.character.special === 'rent_day' &&
@@ -669,6 +674,7 @@ export class Game {
       });
     }
 
+    // Foodie: +1 VP dining once/turn (flights cost more — see fly())
     if (
       p.character.special === 'dining_bonus' &&
       (effective.dining || 0) > 0 &&
@@ -688,16 +694,7 @@ export class Game {
       p.turn.groceryBonusUsed = true;
       this.addLog(`${p.name}'s Family skill: +1 VP (groceries).`);
     }
-    // Landlord: rent lifestyle → +1 VP once/turn
-    if (
-      p.character.special === 'rent_day' &&
-      (effective.rent || 0) > 0 &&
-      !p.turn.rentBonusUsed
-    ) {
-      p.vp += 1;
-      p.turn.rentBonusUsed = true;
-      this.addLog(`${p.name}'s Landlord skill: +1 VP (rent day).`);
-    }
+    // Landlord: free rent-VP removed for balance (Bilt earn skills carry identity)
     // Executive: +2 VP every income (expense reports)
     if (p.character.special === 'extra_card') {
       p.vp += 2;
@@ -995,13 +992,13 @@ export class Game {
     }
 
     let cost = Math.floor(itinerary.baseCost * p.turn.flightMult);
-    // Consultant: all flights −10%
+    // Consultant: all flights −12%
     if (p.character.special === 'polished_routes') {
-      cost = Math.floor(cost * 0.9);
+      cost = Math.floor(cost * 0.88);
     }
-    // Nomad: first flight each turn −30%
+    // Nomad: first flight each turn −40%
     if (p.character.special === 'cheap_flight' && p.turn.flightsThisTurn === 0) {
-      cost = Math.floor(cost * 0.7);
+      cost = Math.floor(cost * 0.6);
     }
     if ((p.airlines[airline] || 0) < cost) {
       throw new Error(`Need ${cost.toLocaleString()} ${airline} miles`);
@@ -1025,15 +1022,20 @@ export class Game {
       if (firstVisit) newCities += 1;
     }
     p.city = toCity;
-    // Nomad: +2 VP per newly visited city this flight
+    // Nomad: +3 VP per newly visited city this flight
     if (p.character.special === 'cheap_flight' && newCities > 0) {
-      const cityVp = newCities * 2;
+      const cityVp = newCities * 3;
       p.vp += cityVp;
       this.addLog(
         `${p.name}'s Nomad skill: +${cityVp} VP (${newCities} new cit${
           newCities === 1 ? 'y' : 'ies'
-        } × 2).`
+        } × 3).`
       );
+    }
+    // Nomad: +1 VP per flight taken
+    if (p.character.special === 'cheap_flight') {
+      p.vp += 1;
+      this.addLog(`${p.name}'s Nomad skill: +1 VP (flight).`);
     }
 
     const legCount = itinerary.legs.length;
@@ -1159,7 +1161,7 @@ export class Game {
       stayVp += 3;
     }
     if (p.character.special === 'extra_card') {
-      stayVp += 3;
+      stayVp += 4;
     }
     p.vp += stayVp;
     this.spendTravel(p);

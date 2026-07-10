@@ -19,7 +19,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=allopt2';
+} from './data.js?v=skillbal1';
 
 /**
  * Per-character bot profile.
