@@ -21,7 +21,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=bugfix1';
+} from './data.js?v=nomad1';
 
 /**
  * Second+ cards: prefer non-Chase partners first so residual bank mix diversifies.

@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=bugfix1';
+} from './data.js?v=nomad1';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -1017,11 +1017,15 @@ export class Game {
       if (firstVisit) newCities += 1;
     }
     p.city = toCity;
-    // Nomad: +2 VP per newly visited city this flight
+    // Nomad: +2 VP per newly visited city this flight (one-stop can award 4)
     if (p.character.special === 'cheap_flight' && newCities > 0) {
       const cityVp = newCities * 2;
       p.vp += cityVp;
-      this.addLog(`${p.name}'s Nomad skill: +${cityVp} VP for new cities.`);
+      this.addLog(
+        `${p.name}'s Nomad skill: +${cityVp} VP (${newCities} new cit${
+          newCities === 1 ? 'y' : 'ies'
+        } × 2).`
+      );
     }
 
     const legCount = itinerary.legs.length;
