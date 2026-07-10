@@ -197,11 +197,11 @@ export const CHARACTERS = [
     special: 'cheap_flight',
     skills: [
       'First flight each turn costs 30% fewer miles',
-      '+2 VP per newly visited city when you land there (stacks on one-stop flights)',
+      '+2 VP per newly visited city when you land there',
       'Private tickets grant +1 bonus VP',
     ],
     specialDesc:
-      'First flight each turn costs 30% fewer miles. +2 VP per newly visited city when you land there (stacks on one-stop flights). Completing a private ticket grants +1 bonus VP.',
+      'First flight each turn costs 30% fewer miles. +2 VP per newly visited city when you land there. Completing a private ticket grants +1 bonus VP.',
     spendProfile: {
       transit: 28,
       travel: 26,

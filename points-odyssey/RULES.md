@@ -56,7 +56,7 @@ What characters *do* change is the **probability that each spend category appear
 |-----------|----------------------------|---------------|
 | **The Consultant** | Travel, dining, flights/hotels | Flights **−15%** miles; **+1 VP** per private ticket |
 | **The Family** | Groceries, gas, hotels, travel | Hotels **−25%** / **+3 VP** stay; start **8k Marriott + 8k Hyatt**; groceries **+1 VP**/turn |
-| **The Nomad** | Transit, travel, hotels/flights | First flight **−30%** miles; **+2 VP** per newly visited city (stacks on one-stop); **+1 VP** private tickets |
+| **The Nomad** | Transit, travel, hotels/flights | First flight **−30%** miles; **+2 VP** per newly visited city; **+1 VP** private tickets |
 | **The Foodie** | Dining, groceries dominant | Dining spend: **+1 VP** once/turn |
 | **The Landlord** | Rent dominant, some dining/travel | Bilt earn **+35%**; rent ≥**2×** on Bilt; rent spend **+1 VP**/turn |
 | **The Executive** | Flights, hotels, dining, travel | Hold **3** cards; signups **+10%**; **$4k** Chase start fund |

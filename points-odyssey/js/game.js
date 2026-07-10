@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=nomad1';
+} from './data.js?v=nomad2';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
