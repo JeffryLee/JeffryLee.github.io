@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=spend3k';
+} from './data.js?v=rebal2';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -134,6 +134,8 @@ function resetTurnState(player) {
     bonusSegment: false,
     freeNightAvailable: false,
     diningBonusUsed: false,
+    groceryBonusUsed: false,
+    rentBonusUsed: false,
     spendRoll: rollSpendAllocation(player.character),
     pendingTickets: null,
     /** Set after auto income: { totalEarned, lines: [{cat, spend, rate, card, pts}] } */
@@ -187,7 +189,7 @@ function giveStarterCard(player) {
   if (def.minSpend <= 0 && def.signupBonus > 0) {
     let bonus = def.signupBonus;
     if (player.character.special === 'extra_card') {
-      bonus = Math.floor(bonus * 1.3);
+      bonus = Math.floor(bonus * 1.1);
     }
     player.banks[def.bank] = (player.banks[def.bank] || 0) + bonus;
     player.cardBonusClaimed[def.id] = true;
@@ -409,10 +411,18 @@ export class Game {
           `${p.name} starts with ${starter.name} (${starter.bank}) and $${GAME_CONFIG.budgetPerTurn.toLocaleString()}/mo lifestyle spend.`
         );
       }
-      // Executive: corporate travel fund (converts signup path into playable points)
+      // Executive: modest corporate travel fund (3rd card is the main perk)
       if (p.character.special === 'extra_card') {
-        p.banks.chase = (p.banks.chase || 0) + 12000;
-        this.addLog(`${p.name} receives a $12,000 Chase travel fund.`);
+        p.banks.chase = (p.banks.chase || 0) + 4000;
+        this.addLog(`${p.name} receives a $4,000 Chase travel fund.`);
+      }
+      // Family: seed hotel currencies so they can race first-claim stays
+      if (p.character.special === 'group_rate') {
+        p.hotels.marriott = (p.hotels.marriott || 0) + 8000;
+        p.hotels.hyatt = (p.hotels.hyatt || 0) + 8000;
+        this.addLog(
+          `${p.name} starts with 8,000 Marriott + 8,000 Hyatt family points.`
+        );
       }
       // Bots lock earn prefs to best rates (humans use Auto until they set prefs)
       if (p.isBot) this.initDefaultEarnPrefs(p);
@@ -663,14 +673,29 @@ export class Game {
       (effective.dining || 0) > 0 &&
       !p.turn.diningBonusUsed
     ) {
-      const diningEarn = this.earnCardForCategory(p, 'dining');
-      const bank =
-        (diningEarn.card && diningEarn.bank) ||
-        (p.cards[0] && p.cards[0].bank) ||
-        null;
       p.vp += 1;
       p.turn.diningBonusUsed = true;
       this.addLog(`${p.name}'s Foodie skill: +1 VP (dining).`);
+    }
+    // Family: groceries lifestyle → +1 VP once/turn
+    if (
+      p.character.special === 'group_rate' &&
+      (effective.groceries || 0) > 0 &&
+      !p.turn.groceryBonusUsed
+    ) {
+      p.vp += 1;
+      p.turn.groceryBonusUsed = true;
+      this.addLog(`${p.name}'s Family skill: +1 VP (groceries).`);
+    }
+    // Landlord: rent lifestyle → +1 VP once/turn
+    if (
+      p.character.special === 'rent_day' &&
+      (effective.rent || 0) > 0 &&
+      !p.turn.rentBonusUsed
+    ) {
+      p.vp += 1;
+      p.turn.rentBonusUsed = true;
+      this.addLog(`${p.name}'s Landlord skill: +1 VP (rent day).`);
     }
 
     p.turn.incomeDone = true;
@@ -775,9 +800,9 @@ export class Game {
     const progress = player.cardSpendProgress[card.id] || 0;
     if (progress >= card.minSpend && card.signupBonus > 0) {
       let bonus = card.signupBonus;
-      // Executive: +30% larger signup bonuses
+      // Executive: +10% larger signup bonuses
       if (player.character.special === 'extra_card') {
-        bonus = Math.floor(bonus * 1.3);
+        bonus = Math.floor(bonus * 1.1);
       }
       player.banks[card.bank] = (player.banks[card.bank] || 0) + bonus;
       player.cardBonusClaimed[card.id] = true;
@@ -966,9 +991,9 @@ export class Game {
     if (p.character.special === 'polished_routes') {
       cost = Math.floor(cost * 0.85);
     }
-    // Nomad: first flight each turn −20%
+    // Nomad: first flight each turn −30%
     if (p.character.special === 'cheap_flight' && p.turn.flightsThisTurn === 0) {
-      cost = Math.floor(cost * 0.8);
+      cost = Math.floor(cost * 0.7);
     }
     if ((p.airlines[airline] || 0) < cost) {
       throw new Error(`Need ${cost.toLocaleString()} ${airline} miles`);
@@ -992,10 +1017,11 @@ export class Game {
       if (firstVisit) newCities += 1;
     }
     p.city = toCity;
-    // Nomad: +1 VP per newly visited city this flight
+    // Nomad: +2 VP per newly visited city this flight
     if (p.character.special === 'cheap_flight' && newCities > 0) {
-      p.vp += newCities;
-      this.addLog(`${p.name}'s Nomad skill: +${newCities} VP for new cities.`);
+      const cityVp = newCities * 2;
+      p.vp += cityVp;
+      this.addLog(`${p.name}'s Nomad skill: +${cityVp} VP for new cities.`);
     }
 
     const legCount = itinerary.legs.length;
@@ -1074,9 +1100,9 @@ export class Game {
     const brand = hotel.brand;
     let costMult =
       (p.turn.hotelMult || 1) * (GAME_CONFIG.hotelCostMultiplier || 1);
-    // Family: group rate −15% hotel costs
+    // Family: group rate −25% hotel costs
     if (p.character.special === 'group_rate') {
-      costMult *= 0.85;
+      costMult *= 0.75;
     }
     let totalCost = Math.floor(hotel.cost * costMult);
     const nights = 1;
@@ -1116,11 +1142,8 @@ export class Game {
       stayVp += 1;
     }
     p.turn.hotelVpBonus = 0;
-    // Family: small stay bonus; Executive: client stays score extra
+    // Family: strong stay bonus (hotel race identity)
     if (p.character.special === 'group_rate') {
-      stayVp += 1;
-    }
-    if (p.character.special === 'extra_card') {
       stayVp += 3;
     }
     p.vp += stayVp;
@@ -1208,9 +1231,12 @@ export class Game {
     for (const t of player.tickets) {
       if (this.ticketComplete(player, t)) {
         let ticketVp = t.points;
-        // Consultant: +3 VP on private tickets
+        // Consultant: +1 VP on private tickets; Nomad: +1 for covering ground
         if (player.character.special === 'polished_routes') {
-          ticketVp += 3;
+          ticketVp += 1;
+        }
+        if (player.character.special === 'cheap_flight') {
+          ticketVp += 1;
         }
         player.vp += ticketVp;
         player.completedTickets.push(t);
@@ -1243,10 +1269,7 @@ export class Game {
     for (const t of this.raceGoals) {
       if (this.ticketComplete(player, t)) {
         let ticketVp = t.points + bonus;
-        // Consultant: smaller race bonus (races are already shared contention)
-        if (player.character.special === 'polished_routes') {
-          ticketVp += 1;
-        }
+        // Races already pay shared-contention bonus — no character add-ons
         player.vp += ticketVp;
         player.completedTickets.push({ ...t, race: true });
         claimed.push(t);

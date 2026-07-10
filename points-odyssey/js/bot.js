@@ -21,7 +21,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=spend3k';
+} from './data.js?v=rebal2';
 
 /**
  * Second+ cards: prefer non-Chase partners first so residual bank mix diversifies.
@@ -88,7 +88,7 @@ function fCost(p, base) {
   let c = Math.floor(base * ((p.turn && p.turn.flightMult) || 1));
   if (p.character.special === 'polished_routes') c = Math.floor(c * 0.85);
   if (p.character.special === 'cheap_flight' && !(p.turn && p.turn.flightsThisTurn)) {
-    c = Math.floor(c * 0.8);
+    c = Math.floor(c * 0.7);
   }
   return c;
 }
@@ -97,7 +97,7 @@ function hCost(p, h) {
   if (p.turn && p.turn.freeNightAvailable) return 0;
   let mult =
     ((p.turn && p.turn.hotelMult) || 1) * (GAME_CONFIG.hotelCostMultiplier || 1);
-  if (p.character.special === 'group_rate') mult *= 0.85;
+  if (p.character.special === 'group_rate') mult *= 0.75;
   return Math.floor(h.cost * mult);
 }
 
@@ -105,8 +105,7 @@ function hVp(p, h, cityId) {
   let vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
   if (!(p._hotelCities && p._hotelCities.has(cityId))) vp += 1;
   vp += (p.turn && p.turn.hotelVpBonus) || 0;
-  if (p.character.special === 'group_rate') vp += 1;
-  if (p.character.special === 'extra_card') vp += 3;
+  if (p.character.special === 'group_rate') vp += 3;
   return vp;
 }
 
@@ -173,7 +172,8 @@ function goals(game, p) {
     const next = prog.origin ? t.to : t.from;
     const rem = prog.origin ? 1 : 2;
     let vp = t.points + (race ? GAME_CONFIG.raceGoalBonusVp || 3 : 0);
-    if (p.character.special === 'polished_routes') vp += race ? 1 : 3;
+    if (p.character.special === 'polished_routes' && !race) vp += 1;
+    if (p.character.special === 'cheap_flight' && !race) vp += 1;
     // Late game: incomplete private tickets hurt — weight penalty avoidance
     if (!race && t.penalty) vp += Math.round(t.penalty * (0.5 + lateFactor));
     // Race: slightly prefer when rem=1 (snipe)
@@ -416,7 +416,7 @@ function scoreFlight(p, f, gList) {
   }
   // Light bonus for new cities (Nomad / exploration)
   for (const c of f.landings) {
-    if (!p.visited.has(c)) sc += p.character.special === 'cheap_flight' ? 8 : 3;
+    if (!p.visited.has(c)) sc += p.character.special === 'cheap_flight' ? 12 : 3;
   }
   sc -= f.cost / 8000;
   return sc;
@@ -492,8 +492,38 @@ function doOneAction(game, p) {
       topGap.rem === 1 &&
       hops(p.city, topGap.city) <= 1 &&
       air >= 5000;
-    if (stay && (!canFinishSoon || stay.vp >= 8 || late) && ok(() => game.bookHotel(stay.id))) {
+    // Family prioritizes claiming hotels while open
+    const hotelFirst =
+      p.character.special === 'group_rate' || stay?.vp >= 10 || late;
+    if (
+      stay &&
+      (hotelFirst || !canFinishSoon || stay.vp >= 8) &&
+      ok(() => game.bookHotel(stay.id))
+    ) {
       return `hotel ${stay.name} +${stay.vp}`;
+    }
+
+    // Family (or high-VP hotel targets): fly toward claimable properties
+    if (
+      (p.character.special === 'group_rate' || late) &&
+      stays.length &&
+      (!canFinishSoon || p.character.special === 'group_rate')
+    ) {
+      const targets = stays
+        .filter((s) => s.dist > 0 && s.dist <= 2)
+        .sort((a, b) => b.vp - a.vp || a.dist - b.dist || a.cost - b.cost);
+      for (const s of targets.slice(0, 4)) {
+        const opts = flightsTo(game, p, s.city);
+        const ready = opts.find((f) => f.ok);
+        if (ready && tryBook(game, ready)) return `→hotel ${s.city}`;
+        if (xfer) {
+          for (const f of opts.slice(0, 3)) {
+            if (!f.ok && tryXferForAirline(game, p, f.air, f.need)) {
+              return `fuel hotel ${s.city}`;
+            }
+          }
+        }
+      }
     }
 
     // Advance rem=2: go to ORIGIN only (never dest first)

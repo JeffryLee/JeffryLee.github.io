@@ -49,17 +49,17 @@ export const GAME_CONFIG = {
 /** First-game strategy lines shown during onboarding / turn tips */
 export const STRATEGY_TIPS = {
   consultant:
-    'Transfer Chase → United, fly ticket origins first, then destinations. Ticket bonuses stack.',
+    'Transfer Chase → United, fly ticket origins first, then destinations. Ticket bonus stacks.',
   family:
-    'Fund Hyatt/Marriott, fly to signature hotels, book stays — hotels are your scoreboard.',
+    'Race signature hotels early — cheaper stays and extra VP while properties are open.',
   nomad:
-    'First flight each turn is cheap. Visit new cities for VP and finish ordered tickets.',
+    'First flight each turn is steeply discounted. Farm new cities and chain ordered tickets.',
   foodie:
-    'Dining earns extra bank points each turn. Transfer Amex → Delta/Hilton and travel.',
+    'Keep dining on a strong card — free VP every income with food spend.',
   landlord:
     'Rent on Bilt earns hard; transfer to United/American/Hyatt and race public goals.',
   executive:
-    'Open premium cards for fat signups, then hotel hops for client-stay VP.',
+    'Open a third premium card for fat signups, diversify earn, then transfer and travel.',
 };
 
 /** Character → free starter card id (so round-1 income can earn) */
@@ -136,7 +136,8 @@ export const CATEGORIES = [
 export const SPEND_DRAWS = 5;
 
 /**
- * Skills tuned so themed kits stay distinct but avg VP is closer in bot sims.
+ * Skills tuned from 6p bot win-rate sims (target ~fair share 1/n each).
+ * Identity stays thematic; VP power from stacking bonuses is capped.
  */
 export const CHARACTERS = [
   {
@@ -148,7 +149,7 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'polished_routes',
     specialDesc:
-      'All award flights cost 15% fewer miles. Completing a private trip ticket grants +3 bonus VP (+1 on race goals).',
+      'All award flights cost 15% fewer miles. Completing a private trip ticket grants +1 bonus VP (no race bonus).',
     spendProfile: {
       travel: 35,
       dining: 25,
@@ -166,14 +167,15 @@ export const CHARACTERS = [
     homeCity: 'ORD',
     cardLimitBonus: 0,
     special: 'group_rate',
-    specialDesc: 'Hotel award nights cost 15% fewer points and grant +1 bonus VP per stay.',
+    specialDesc:
+      'Hotel nights −25% cost and +3 VP per stay. Start with 8k Marriott + 8k Hyatt. Groceries spend: +1 VP once/turn.',
     spendProfile: {
-      groceries: 35,
-      gas: 20,
+      groceries: 30,
+      gas: 18,
       dining: 15,
-      everything: 12,
-      travel: 10,
-      hotels: 8,
+      hotels: 14,
+      travel: 13,
+      everything: 10,
     },
   },
   {
@@ -185,13 +187,13 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'cheap_flight',
     specialDesc:
-      'First flight each turn costs 20% fewer miles. +1 VP the first time you land in a new city.',
+      'First flight each turn costs 30% fewer miles. +2 VP the first time you land in a new city. Completing a private ticket grants +1 bonus VP.',
     spendProfile: {
-      transit: 30,
-      travel: 25,
-      dining: 15,
+      transit: 28,
+      travel: 26,
+      dining: 14,
       hotels: 12,
-      flights: 10,
+      flights: 12,
       everything: 8,
     },
   },
@@ -222,7 +224,7 @@ export const CHARACTERS = [
     cardLimitBonus: 0,
     special: 'rent_day',
     specialDesc:
-      'Bilt earn +35% always (stacks with Rent Day events). Rent spend on Bilt earns at least 2× before that boost.',
+      'Bilt earn +35% always (stacks with Rent Day events). Rent on Bilt at least 2× before boost. Rent spend: +1 VP once/turn.',
     spendProfile: {
       rent: 50,
       dining: 15,
@@ -241,7 +243,7 @@ export const CHARACTERS = [
     cardLimitBonus: 1,
     special: 'extra_card',
     specialDesc:
-      'Hold up to 3 cards (others 2). Signup bonuses +30% larger. Start with a $12k Chase travel fund. Each hotel stay +3 VP (client travel).',
+      'Hold up to 3 cards (others 2). Signup bonuses +10% larger. Start with a $4k Chase travel fund.',
     spendProfile: {
       flights: 25,
       hotels: 25,

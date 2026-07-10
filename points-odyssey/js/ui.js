@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=spend3k';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=spend3k';
-import { playBotActions } from './bot.js?v=spend3k';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=spend3k';
+} from './game.js?v=rebal2';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=rebal2';
+import { playBotActions } from './bot.js?v=rebal2';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=rebal2';
 
 const game = new Game();
 let setupSelections = [];
@@ -770,7 +770,7 @@ function showCityInfo(cityId, cur) {
             itemClass += ' hotel-claimed';
           }
           let hMult = GAME_CONFIG.hotelCostMultiplier || 1;
-          if (cur.character && cur.character.special === 'group_rate') hMult *= 0.85;
+          if (cur.character && cur.character.special === 'group_rate') hMult *= 0.75;
           const cost = Math.floor(h.cost * hMult);
           const vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
           const icon = (HOTELS[h.brand] && HOTELS[h.brand].logo) || h.icon || `assets/hotels/brands/${h.brand}.png`;
@@ -1833,7 +1833,7 @@ function openFlightModal() {
       cost = Math.floor(cost * 0.85);
     }
     if (p.character.special === 'cheap_flight' && flightsThisTurn === 0) {
-      cost = Math.floor(cost * 0.8);
+      cost = Math.floor(cost * 0.7);
     }
     const segs = +sel.dataset.stops === 1 ? 2 : 1;
     $('#flight-airline').innerHTML = airlines
@@ -1876,7 +1876,7 @@ function openHotelModal() {
   let hotelMult =
     ((p.turn && p.turn.hotelMult) || 1) *
     (GAME_CONFIG.hotelCostMultiplier || 1);
-  if (p.character.special === 'group_rate') hotelMult *= 0.85;
+  if (p.character.special === 'group_rate') hotelMult *= 0.75;
   const vpMult = GAME_CONFIG.hotelVpMultiplier || 1;
   const freeNight = p.turn && p.turn.freeNightAvailable;
 
