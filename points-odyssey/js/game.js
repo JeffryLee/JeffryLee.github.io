@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=flbal2';
+} from './data.js?v=nfe1';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -688,21 +688,21 @@ export class Game {
       p.turn.diningBonusUsed = true;
       this.addLog(`${p.name}'s Foodie skill: +1 VP (dining).`);
     }
-    // Family: groceries lifestyle → +1 VP once/turn
+    // Family: groceries lifestyle → +2 VP once/turn
     if (
       p.character.special === 'group_rate' &&
       (effective.groceries || 0) > 0 &&
       !p.turn.groceryBonusUsed
     ) {
-      p.vp += 1;
+      p.vp += 2;
       p.turn.groceryBonusUsed = true;
-      this.addLog(`${p.name}'s Family skill: +1 VP (groceries).`);
+      this.addLog(`${p.name}'s Family skill: +2 VP (groceries).`);
     }
     // Landlord: free rent-VP omitted — earn mult carries identity for ticket bots
-    // Executive: +2 VP every income (expense reports)
+    // Executive: +3 VP every income (expense reports)
     if (p.character.special === 'extra_card') {
-      p.vp += 2;
-      this.addLog(`${p.name}'s Executive skill: +2 VP (expense reports).`);
+      p.vp += 3;
+      this.addLog(`${p.name}'s Executive skill: +3 VP (expense reports).`);
     }
 
     p.turn.incomeDone = true;
@@ -1026,7 +1026,7 @@ export class Game {
       if (firstVisit) newCities += 1;
     }
     p.city = toCity;
-    // Nomad: +3 VP per newly visited city this flight
+    // Nomad: +3 VP per newly visited city this flight (no per-flight VP — balance)
     if (p.character.special === 'cheap_flight' && newCities > 0) {
       const cityVp = newCities * 3;
       p.vp += cityVp;
@@ -1035,11 +1035,6 @@ export class Game {
           newCities === 1 ? 'y' : 'ies'
         } × 3).`
       );
-    }
-    // Nomad: +1 VP per flight taken
-    if (p.character.special === 'cheap_flight') {
-      p.vp += 1;
-      this.addLog(`${p.name}'s Nomad skill: +1 VP (flight).`);
     }
 
     const legCount = itinerary.legs.length;
@@ -1165,7 +1160,7 @@ export class Game {
       stayVp += 3;
     }
     if (p.character.special === 'extra_card') {
-      stayVp += 4;
+      stayVp += 5;
     }
     p.vp += stayVp;
     this.spendTravel(p);

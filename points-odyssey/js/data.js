@@ -174,10 +174,10 @@ export const CHARACTERS = [
     skills: [
       'Hotel nights −25% cost and +3 VP per stay',
       'Start with 10k Marriott + 10k Hyatt + 5k Hilton',
-      'Groceries spend: +1 VP once/turn',
+      'Groceries spend: +2 VP once/turn',
     ],
     specialDesc:
-      'Hotel nights −25% cost and +3 VP per stay. Start with 10k Marriott + 10k Hyatt + 5k Hilton. Groceries spend: +1 VP once/turn.',
+      'Hotel nights −25% cost and +3 VP per stay. Start with 10k Marriott + 10k Hyatt + 5k Hilton. Groceries spend: +2 VP once/turn.',
     spendProfile: {
       groceries: 30,
       gas: 18,
@@ -198,10 +198,9 @@ export const CHARACTERS = [
     skills: [
       'First flight each turn costs 40% fewer miles',
       '+3 VP per newly visited city when you land there',
-      '+1 VP each time you take a flight',
     ],
     specialDesc:
-      'First flight each turn costs 40% fewer miles. +3 VP per newly visited city when you land there. +1 VP each time you take a flight.',
+      'First flight each turn costs 40% fewer miles. +3 VP per newly visited city when you land there.',
     spendProfile: {
       transit: 28,
       travel: 26,
@@ -270,11 +269,11 @@ export const CHARACTERS = [
       'Hold up to 3 cards (others 2)',
       'Signup bonuses +25% larger',
       'Start with a $10k Chase travel fund',
-      'Each hotel stay +4 VP (client travel)',
-      '+2 VP every income (expense reports)',
+      'Each hotel stay +5 VP (client travel)',
+      '+3 VP every income (expense reports)',
     ],
     specialDesc:
-      'Hold up to 3 cards (others 2). Signup bonuses +25% larger. Start with a $10k Chase travel fund. Each hotel stay +4 VP. +2 VP every income.',
+      'Hold up to 3 cards (others 2). Signup bonuses +25% larger. Start with a $10k Chase travel fund. Each hotel stay +5 VP. +3 VP every income.',
     spendProfile: {
       flights: 25,
       hotels: 25,
