@@ -37,7 +37,7 @@ Game systems are **inspired by** real US transfer ecosystems (Chase Ultimate Rew
 4. Deal each player **3 Trip Tickets**. Keep **2**, discard 1 face-down to the ticket deck bottom. (You may keep all 3 in a harder variant.)
 5. Shuffle the **Event deck**.
 6. Each player starts with:
-   - **$5,000** monthly spend budget each Income phase
+   - **$3,000** monthly spend budget each Income phase
    - A **starter credit card** matching their character (so round 1 can earn)
    - A small bank seed (~3,000 Chase) plus any instant signup on the starter card
    - **0** hotel/airline points (until you transfer)
@@ -50,7 +50,7 @@ Game systems are **inspired by** real US transfer ecosystems (Chase Ultimate Rew
 
 Characters do **not** grant earn multipliers. **Earn rates come only from credit cards** (0× without a card).
 
-What characters *do* change is the **probability that each spend category appears** during Income. Each turn the game rolls your **$5,000** monthly budget into several chunks; each chunk lands on a category weighted by your lifestyle profile.
+What characters *do* change is the **probability that each spend category appears** during Income. Each turn the game rolls your **$3,000** monthly budget into several chunks; each chunk lands on a category weighted by your lifestyle profile.
 
 | Character | Spend appearance (approx.) | Special skill |
 |-----------|----------------------------|---------------|
@@ -161,7 +161,7 @@ Example events:
 
 ### 2. Income Phase (automatic)
 
-1. Roll **lifestyle spend** ($5,000): category chunks by character odds (no re-roll, no manual allocation).
+1. Roll **lifestyle spend** ($3,000): category chunks by character odds (no re-roll, no manual allocation).
 2. For each category, earn on the **card you assigned** for that category (**Earn prefs**). If unset, use your **best rate** card. **No card → 0×**.
 3. Track **signup bonus progress** on the card that earned the spend.
 4. You may change earn prefs any time on your turn; they apply to the **next** income.

@@ -7,7 +7,7 @@ export const GAME_CONFIG = {
   minPlayers: 3,
   maxPlayers: 6,
   maxRounds: 10,
-  budgetPerTurn: 5000,
+  budgetPerTurn: 3000,
   /** Max credit cards (Executive gets +cardLimitBonus) */
   defaultCardLimit: 2,
   maxTripTickets: 4,
