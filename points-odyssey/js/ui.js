@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=fixparse1';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=fixparse1';
-import { playBotActions } from './bot.js?v=fixparse1';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=fixparse1';
+} from './game.js?v=spendshow1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=spendshow1';
+import { playBotActions } from './bot.js?v=spendshow1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=spendshow1';
 
 const game = new Game();
 let setupSelections = [];
@@ -192,6 +192,8 @@ function renderSetup() {
         <div class="char-info">
           <h3>${c.name}</h3>
           <p>${c.blurb}</p>
+          ${characterSpendStructureHtml(c)}
+          <div class="skill-struct-label">Special skill</div>
           ${characterSkillsListHtml(c, 'skill-bullets special')}
           <p class="home">Home: ${home}</p>
           ${
