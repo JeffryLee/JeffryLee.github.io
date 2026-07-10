@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=nfe1';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=nfe1';
-import { playBotActions } from './bot.js?v=nfe1';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=nfe1';
+} from './game.js?v=nfe2';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=nfe2';
+import { playBotActions } from './bot.js?v=nfe2';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=nfe2';
 
 const game = new Game();
 let setupSelections = [];

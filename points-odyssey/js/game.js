@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=nfe1';
+} from './data.js?v=nfe2';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -418,11 +418,11 @@ export class Game {
       }
       // Family: seed hotel currencies so they can race first-claim stays
       if (p.character.special === 'group_rate') {
-        p.hotels.marriott = (p.hotels.marriott || 0) + 10000;
-        p.hotels.hyatt = (p.hotels.hyatt || 0) + 10000;
-        p.hotels.hilton = (p.hotels.hilton || 0) + 5000;
+        p.hotels.marriott = (p.hotels.marriott || 0) + 8000;
+        p.hotels.hyatt = (p.hotels.hyatt || 0) + 8000;
+        p.hotels.hilton = (p.hotels.hilton || 0) + 4000;
         this.addLog(
-          `${p.name} starts with 10k Marriott + 10k Hyatt + 5k Hilton family points.`
+          `${p.name} starts with 8k Marriott + 8k Hyatt + 4k Hilton family points.`
         );
       }
       // Bots lock earn prefs to best rates (humans use Auto until they set prefs)
@@ -688,21 +688,21 @@ export class Game {
       p.turn.diningBonusUsed = true;
       this.addLog(`${p.name}'s Foodie skill: +1 VP (dining).`);
     }
-    // Family: groceries lifestyle → +2 VP once/turn
+    // Family: groceries lifestyle → +1 VP once/turn
     if (
       p.character.special === 'group_rate' &&
       (effective.groceries || 0) > 0 &&
       !p.turn.groceryBonusUsed
     ) {
-      p.vp += 2;
+      p.vp += 1;
       p.turn.groceryBonusUsed = true;
-      this.addLog(`${p.name}'s Family skill: +2 VP (groceries).`);
+      this.addLog(`${p.name}'s Family skill: +1 VP (groceries).`);
     }
     // Landlord: free rent-VP omitted — earn mult carries identity for ticket bots
-    // Executive: +3 VP every income (expense reports)
+    // Executive: +2 VP every income (expense reports)
     if (p.character.special === 'extra_card') {
-      p.vp += 3;
-      this.addLog(`${p.name}'s Executive skill: +3 VP (expense reports).`);
+      p.vp += 2;
+      this.addLog(`${p.name}'s Executive skill: +2 VP (expense reports).`);
     }
 
     p.turn.incomeDone = true;
@@ -1026,7 +1026,7 @@ export class Game {
       if (firstVisit) newCities += 1;
     }
     p.city = toCity;
-    // Nomad: +3 VP per newly visited city this flight (no per-flight VP — balance)
+    // Nomad: +3 VP per newly visited city this flight
     if (p.character.special === 'cheap_flight' && newCities > 0) {
       const cityVp = newCities * 3;
       p.vp += cityVp;
@@ -1035,6 +1035,11 @@ export class Game {
           newCities === 1 ? 'y' : 'ies'
         } × 3).`
       );
+    }
+    // Nomad: +1 VP on first flight of the turn only
+    if (p.character.special === 'cheap_flight' && p.turn.flightsThisTurn === 0) {
+      p.vp += 1;
+      this.addLog(`${p.name}'s Nomad skill: +1 VP (first flight).`);
     }
 
     const legCount = itinerary.legs.length;
@@ -1160,7 +1165,7 @@ export class Game {
       stayVp += 3;
     }
     if (p.character.special === 'extra_card') {
-      stayVp += 5;
+      stayVp += 4;
     }
     p.vp += stayVp;
     this.spendTravel(p);
@@ -1249,6 +1254,10 @@ export class Game {
         let ticketVp = t.points;
         // Consultant: +1 VP on private tickets (Nomad scores via new cities instead)
         if (player.character.special === 'polished_routes') {
+          ticketVp += 1;
+        }
+        // Family: +1 VP on private trip tickets
+        if (player.character.special === 'group_rate') {
           ticketVp += 1;
         }
         player.vp += ticketVp;
@@ -1385,8 +1394,13 @@ export class Game {
     for (const p of this.players) {
       let ticketPen = 0;
       for (const t of p.tickets) {
-        ticketPen += t.penalty;
-        p.vp -= t.penalty;
+        let pen = t.penalty;
+        // Executive: hotel path leaves tickets unfinished — half penalty
+        if (p.character.special === 'extra_card') {
+          pen = Math.ceil(pen / 2);
+        }
+        ticketPen += pen;
+        p.vp -= pen;
       }
 
       // Leftover points — weak conversion so travel/hotels/tickets dominate

@@ -20,7 +20,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=nfe1';
+} from './data.js?v=nfe2';
 
 /**
  * Per-character bot profile.

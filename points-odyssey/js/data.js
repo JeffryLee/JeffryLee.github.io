@@ -173,11 +173,12 @@ export const CHARACTERS = [
     special: 'group_rate',
     skills: [
       'Hotel nights −25% cost and +3 VP per stay',
-      'Start with 10k Marriott + 10k Hyatt + 5k Hilton',
-      'Groceries spend: +2 VP once/turn',
+      'Start with 8k Marriott + 8k Hyatt + 4k Hilton',
+      'Groceries spend: +1 VP once/turn',
+      'Private trip tickets grant +1 bonus VP',
     ],
     specialDesc:
-      'Hotel nights −25% cost and +3 VP per stay. Start with 10k Marriott + 10k Hyatt + 5k Hilton. Groceries spend: +2 VP once/turn.',
+      'Hotel nights −25% cost and +3 VP per stay. Start with 8k Marriott + 8k Hyatt + 4k Hilton. Groceries spend: +1 VP once/turn. Completing a private trip ticket grants +1 bonus VP.',
     spendProfile: {
       groceries: 30,
       gas: 18,
@@ -198,9 +199,10 @@ export const CHARACTERS = [
     skills: [
       'First flight each turn costs 40% fewer miles',
       '+3 VP per newly visited city when you land there',
+      '+1 VP on the first flight each turn',
     ],
     specialDesc:
-      'First flight each turn costs 40% fewer miles. +3 VP per newly visited city when you land there.',
+      'First flight each turn costs 40% fewer miles and grants +1 VP. +3 VP per newly visited city when you land there.',
     spendProfile: {
       transit: 28,
       travel: 26,
@@ -269,11 +271,12 @@ export const CHARACTERS = [
       'Hold up to 3 cards (others 2)',
       'Signup bonuses +25% larger',
       'Start with a $10k Chase travel fund',
-      'Each hotel stay +5 VP (client travel)',
-      '+3 VP every income (expense reports)',
+      'Each hotel stay +4 VP (client travel)',
+      '+2 VP every income (expense reports)',
+      'Unfinished private tickets: −50% penalty',
     ],
     specialDesc:
-      'Hold up to 3 cards (others 2). Signup bonuses +25% larger. Start with a $10k Chase travel fund. Each hotel stay +5 VP. +3 VP every income.',
+      'Hold up to 3 cards (others 2). Signup bonuses +25% larger. Start with a $10k Chase travel fund. Each hotel stay +4 VP. +2 VP every income. Unfinished private tickets score half penalty.',
     spendProfile: {
       flights: 25,
       hotels: 25,
