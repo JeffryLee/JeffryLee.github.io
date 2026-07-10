@@ -1,9 +1,9 @@
 # Hotel brand icons
 
-Three shared cartoon brand badges (one per chain), stylized from official brand marks via i2i:
+Three shared cartoon brand badges (one per chain), PNG with transparent backgrounds:
 
-- `brands/hilton.jpg` — Hilton Honors (cartoon app badge)
-- `brands/hyatt.jpg` — Hyatt wordmark with arc (cartoon app badge)
-- `brands/marriott.jpg` — Marriott M monogram (cartoon app badge)
+- `brands/hilton.png` — Hilton Honors
+- `brands/hyatt.png` — Hyatt wordmark with arc
+- `brands/marriott.png` — Marriott M monogram
 
-All hotels of a brand share the same icon.
+Stylized from brand marks via i2i cartoon pass; all hotels of a brand share the same icon.

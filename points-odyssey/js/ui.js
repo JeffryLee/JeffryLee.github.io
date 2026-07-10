@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=brand2';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=brand2';
-import { playBotActions } from './bot.js?v=brand2';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=brand2';
+} from './game.js?v=brand3';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=brand3';
+import { playBotActions } from './bot.js?v=brand3';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=brand3';
 
 const game = new Game();
 let setupSelections = [];
@@ -759,7 +759,7 @@ function showCityInfo(cityId, cur) {
           if (cur.character && cur.character.special === 'group_rate') hMult *= 0.85;
           const cost = Math.floor(h.cost * hMult);
           const vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
-          const icon = (HOTELS[h.brand] && HOTELS[h.brand].logo) || h.icon || `assets/hotels/brands/${h.brand}.jpg`;
+          const icon = (HOTELS[h.brand] && HOTELS[h.brand].logo) || h.icon || `assets/hotels/brands/${h.brand}.png`;
           return `<li class="hotel-list-item">
             <img class="hotel-icon" src="${icon}" alt="" width="48" height="48" loading="lazy" />
             <div>
@@ -1879,7 +1879,7 @@ function openHotelModal() {
             const already = p.stayedHotels.has(h.id);
             const brandName = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
             const canPay = freeNight || bal >= cost;
-            const icon = (HOTELS[h.brand] && HOTELS[h.brand].logo) || h.icon || `assets/hotels/brands/${h.brand}.jpg`;
+            const icon = (HOTELS[h.brand] && HOTELS[h.brand].logo) || h.icon || `assets/hotels/brands/${h.brand}.png`;
             return `
               <label class="card-option hotel-pick ${already ? 'disabled-opt' : ''}">
                 <input type="radio" name="hotel" value="${h.id}"
