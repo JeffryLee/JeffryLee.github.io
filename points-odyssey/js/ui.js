@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=tixnerf3';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=tixnerf3';
-import { playBotActions } from './bot.js?v=tixnerf3';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=tixnerf3';
+} from './game.js?v=rebal3';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=rebal3';
+import { playBotActions } from './bot.js?v=rebal3';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=rebal3';
 
 const game = new Game();
 let setupSelections = [];
@@ -1879,7 +1879,7 @@ function openFlightModal() {
     const airlines = JSON.parse(sel.dataset.airlines);
     let cost = Math.floor(+sel.dataset.cost * flightMult);
     if (p.character.special === 'polished_routes') {
-      cost = Math.floor(cost * 0.85);
+      cost = Math.floor(cost * 0.9);
     }
     if (p.character.special === 'cheap_flight' && flightsThisTurn === 0) {
       cost = Math.floor(cost * 0.7);
@@ -1923,6 +1923,7 @@ function previewHotelStayVp(p, h, cityId) {
   vp += (p.turn && p.turn.hotelVpBonus) || 0;
   if (!(p._hotelCities && p._hotelCities.has(cityId))) vp += 1;
   if (p.character && p.character.special === 'group_rate') vp += 3;
+  if (p.character && p.character.special === 'extra_card') vp += 3;
   return vp;
 }
 

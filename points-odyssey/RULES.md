@@ -54,12 +54,12 @@ What characters *do* change is the **probability that each spend category appear
 
 | Character | Spend appearance (approx.) | Special skill |
 |-----------|----------------------------|---------------|
-| **The Consultant** | Travel, dining, flights/hotels | Flights **−15%** miles; **+1 VP** per private ticket |
-| **The Family** | Groceries, gas, hotels, travel | Hotels **−25%** / **+3 VP** stay; start **8k Marriott + 8k Hyatt**; groceries **+1 VP**/turn |
-| **The Nomad** | Transit, travel, hotels/flights | First flight **−30%** miles; **+2 VP** per newly visited city; **+1 VP** private tickets |
+| **The Consultant** | Travel, dining, flights/hotels | Flights **−10%** miles; **+1 VP** per private ticket |
+| **The Family** | Groceries, gas, hotels, travel | Hotels **−25%** / **+3 VP** stay; start **10k Mar + 10k Hyatt + 5k Hilton**; groceries **+1 VP**/turn |
+| **The Nomad** | Transit, travel, hotels/flights | First flight **−30%** miles; **+2 VP** per newly visited city |
 | **The Foodie** | Dining, groceries dominant | Dining spend: **+1 VP** once/turn |
-| **The Landlord** | Rent dominant, some dining/travel | Bilt earn **+35%**; rent ≥**2×** on Bilt; rent spend **+1 VP**/turn |
-| **The Executive** | Flights, hotels, dining, travel | Hold **3** cards; signups **+10%**; **$4k** Chase start fund |
+| **The Landlord** | Rent dominant, some dining/travel | Bilt earn **+30%**; rent ≥**2×** on Bilt; rent spend **+1 VP**/turn |
+| **The Executive** | Flights, hotels, dining, travel | **3** cards; signups **+25%**; **$10k** Chase; hotel **+3 VP**; **+2 VP**/income |
 
 **Points earned** = dollars in category × best **credit card** earn rate for that category.
 

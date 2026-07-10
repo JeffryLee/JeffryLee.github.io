@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=tixnerf3';
+} from './data.js?v=rebal3';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -189,7 +189,7 @@ function giveStarterCard(player) {
   if (def.minSpend <= 0 && def.signupBonus > 0) {
     let bonus = def.signupBonus;
     if (player.character.special === 'extra_card') {
-      bonus = Math.floor(bonus * 1.1);
+      bonus = Math.floor(bonus * 1.25);
     }
     player.banks[def.bank] = (player.banks[def.bank] || 0) + bonus;
     player.cardBonusClaimed[def.id] = true;
@@ -411,17 +411,18 @@ export class Game {
           `${p.name} starts with ${starter.name} (${starter.bank}) and $${GAME_CONFIG.budgetPerTurn.toLocaleString()}/mo lifestyle spend.`
         );
       }
-      // Executive: modest corporate travel fund (3rd card is the main perk)
+      // Executive: corporate travel fund (3rd card + client stays)
       if (p.character.special === 'extra_card') {
-        p.banks.chase = (p.banks.chase || 0) + 4000;
-        this.addLog(`${p.name} receives a $4,000 Chase travel fund.`);
+        p.banks.chase = (p.banks.chase || 0) + 10000;
+        this.addLog(`${p.name} receives a $10,000 Chase travel fund.`);
       }
       // Family: seed hotel currencies so they can race first-claim stays
       if (p.character.special === 'group_rate') {
-        p.hotels.marriott = (p.hotels.marriott || 0) + 8000;
-        p.hotels.hyatt = (p.hotels.hyatt || 0) + 8000;
+        p.hotels.marriott = (p.hotels.marriott || 0) + 10000;
+        p.hotels.hyatt = (p.hotels.hyatt || 0) + 10000;
+        p.hotels.hilton = (p.hotels.hilton || 0) + 5000;
         this.addLog(
-          `${p.name} starts with 8,000 Marriott + 8,000 Hyatt family points.`
+          `${p.name} starts with 10k Marriott + 10k Hyatt + 5k Hilton family points.`
         );
       }
       // Bots lock earn prefs to best rates (humans use Auto until they set prefs)
@@ -638,7 +639,7 @@ export class Game {
       }
       let biltMult = p.turn.biltBoost || 1;
       if (p.character.special === 'rent_day' && bank === 'bilt') {
-        biltMult *= 1.35;
+        biltMult *= 1.3;
       }
       if (bank === 'bilt') {
         pts = Math.floor(pts * biltMult);
@@ -696,6 +697,11 @@ export class Game {
       p.vp += 1;
       p.turn.rentBonusUsed = true;
       this.addLog(`${p.name}'s Landlord skill: +1 VP (rent day).`);
+    }
+    // Executive: +2 VP every income (expense reports)
+    if (p.character.special === 'extra_card') {
+      p.vp += 2;
+      this.addLog(`${p.name}'s Executive skill: +2 VP (expense reports).`);
     }
 
     p.turn.incomeDone = true;
@@ -802,9 +808,9 @@ export class Game {
     const progress = player.cardSpendProgress[card.id] || 0;
     if (progress >= card.minSpend && card.signupBonus > 0) {
       let bonus = card.signupBonus;
-      // Executive: +10% larger signup bonuses
+      // Executive: +25% larger signup bonuses
       if (player.character.special === 'extra_card') {
-        bonus = Math.floor(bonus * 1.1);
+        bonus = Math.floor(bonus * 1.25);
       }
       player.banks[card.bank] = (player.banks[card.bank] || 0) + bonus;
       player.cardBonusClaimed[card.id] = true;
@@ -989,9 +995,9 @@ export class Game {
     }
 
     let cost = Math.floor(itinerary.baseCost * p.turn.flightMult);
-    // Consultant: all flights −15%
+    // Consultant: all flights −10%
     if (p.character.special === 'polished_routes') {
-      cost = Math.floor(cost * 0.85);
+      cost = Math.floor(cost * 0.9);
     }
     // Nomad: first flight each turn −30%
     if (p.character.special === 'cheap_flight' && p.turn.flightsThisTurn === 0) {
@@ -1148,8 +1154,11 @@ export class Game {
       stayVp += 1;
     }
     p.turn.hotelVpBonus = 0;
-    // Family: strong stay bonus (hotel race identity)
+    // Family: strong stay bonus; Executive: client-stay bonus
     if (p.character.special === 'group_rate') {
+      stayVp += 3;
+    }
+    if (p.character.special === 'extra_card') {
       stayVp += 3;
     }
     p.vp += stayVp;
@@ -1237,11 +1246,8 @@ export class Game {
     for (const t of player.tickets) {
       if (this.ticketComplete(player, t)) {
         let ticketVp = t.points;
-        // Consultant: +1 VP on private tickets; Nomad: +1 for covering ground
+        // Consultant: +1 VP on private tickets (Nomad scores via new cities instead)
         if (player.character.special === 'polished_routes') {
-          ticketVp += 1;
-        }
-        if (player.character.special === 'cheap_flight') {
           ticketVp += 1;
         }
         player.vp += ticketVp;

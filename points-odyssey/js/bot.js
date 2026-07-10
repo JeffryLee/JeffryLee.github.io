@@ -21,7 +21,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=tixnerf3';
+} from './data.js?v=rebal3';
 
 /**
  * Second+ cards: prefer non-Chase partners first so residual bank mix diversifies.
@@ -154,7 +154,7 @@ const sum = (o) => Object.values(o || {}).reduce((a, b) => a + (b || 0), 0);
 
 function fCost(p, base) {
   let c = Math.floor(base * ((p.turn && p.turn.flightMult) || 1));
-  if (p.character.special === 'polished_routes') c = Math.floor(c * 0.85);
+  if (p.character.special === 'polished_routes') c = Math.floor(c * 0.9);
   if (p.character.special === 'cheap_flight' && !(p.turn && p.turn.flightsThisTurn)) {
     c = Math.floor(c * 0.7);
   }
@@ -174,6 +174,7 @@ function hVp(p, h, cityId) {
   if (!(p._hotelCities && p._hotelCities.has(cityId))) vp += 1;
   vp += (p.turn && p.turn.hotelVpBonus) || 0;
   if (p.character.special === 'group_rate') vp += 3;
+  if (p.character.special === 'extra_card') vp += 3;
   return vp;
 }
 
@@ -241,7 +242,6 @@ function goals(game, p) {
     const rem = prog.origin ? 1 : 2;
     let vp = t.points + (race ? GAME_CONFIG.raceGoalBonusVp || 3 : 0);
     if (p.character.special === 'polished_routes' && !race) vp += 1;
-    if (p.character.special === 'cheap_flight' && !race) vp += 1;
     // Late game: incomplete private tickets hurt — weight penalty avoidance
     if (!race && t.penalty) vp += Math.round(t.penalty * (0.5 + lateFactor));
     // Race: slightly prefer when rem=1 (snipe)
