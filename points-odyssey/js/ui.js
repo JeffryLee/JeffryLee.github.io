@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=compat1';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=compat1';
-import { playBotActions } from './bot.js?v=compat1';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=compat1';
+} from './game.js?v=fixparse1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=fixparse1';
+import { playBotActions } from './bot.js?v=fixparse1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=fixparse1';
 
 const game = new Game();
 let setupSelections = [];
@@ -1530,9 +1530,6 @@ function openModal(title, bodyHtml, onConfirm) {
 
 function closeModal() {
   $('#modal-overlay').classList.remove('open');
-}
-
-function openCardMosList.remove('open');
 }
 
 function openCardModal() {
