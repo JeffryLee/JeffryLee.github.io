@@ -18,7 +18,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=foodieopt1';
+} from './data.js?v=foodieopt2';
 
 /**
  * Per-character bot profile.
@@ -811,18 +811,26 @@ function doOneAction(game, p) {
       }
     }
 
-    // Foodie (etc.): aggressive Amex → Delta dump for ticket fuel
+    // Foodie (etc.): aggressive bank → preferred airline dump for ticket fuel
     const s = strat(p);
-    if (s.airDumpPct && s.preferAir && (p.banks.amex || 0) >= 2000) {
-      const partners = TRANSFERS.amex;
-      if (partners && partners[s.preferAir]) {
-        const bal = p.banks.amex;
+    if (s.airDumpPct && s.preferAir) {
+      const dumps = [
+        { bank: 'amex', air: s.preferAir },
+        { bank: 'amex', air: 'delta' },
+        { bank: 'citi', air: 'american' },
+        { bank: 'chase', air: 'united' },
+        { bank: 'bilt', air: 'united' },
+      ];
+      for (const d of dumps) {
+        const partners = TRANSFERS[d.bank];
+        if (!partners || !partners[d.air]) continue;
+        const bal = p.banks[d.bank] || 0;
+        if (bal < 2000) continue;
         const amt =
-          Math.floor(
-            Math.min(bal, Math.max(5000, bal * s.airDumpPct)) / 1000
-          ) * 1000;
-        if (amt >= 1000 && ok(() => game.transferPoints('amex', s.preferAir, amt))) {
-          return `dump Amex→${s.preferAir}`;
+          Math.floor(Math.min(bal, Math.max(4000, bal * s.airDumpPct)) / 1000) *
+          1000;
+        if (amt >= 1000 && ok(() => game.transferPoints(d.bank, d.air, amt))) {
+          return `dump ${d.bank}→${d.air}`;
         }
       }
     }
@@ -910,11 +918,19 @@ function doOneAction(game, p) {
   }
 
   // ——— BUILD: card / tickets / rest ———
+  // Ticket-path: open preferred earn card ASAP (before rest)
   if (build) {
-    // Open character-preferred cards early (Executive holds 3 through mid-game)
     const limit = typeof game.cardLimit === 'function' ? game.cardLimit(p) : 2;
-    const cardRound = p.character.special === 'extra_card' ? 7 : 5;
-    if (p.cards.length < limit && round <= cardRound) {
+    const cardRound = p.character.special === 'extra_card' ? 7 : 6;
+    const needGold =
+      strat(p).ticketEager &&
+      strat(p).cards &&
+      strat(p).cards[0] &&
+      !holdsCard(p, strat(p).cards[0]);
+    if (
+      p.cards.length < limit &&
+      (round <= cardRound || needGold)
+    ) {
       const held = new Set(p.cards.map((c) => c.id));
       for (const id of strat(p).cards || []) {
         if (!held.has(id) && ok(() => game.applyForCard(id))) return `card ${id}`;
