@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=skills2';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=skills2';
-import { playBotActions } from './bot.js?v=skills2';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=skills2';
+} from './game.js?v=bugfix1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=bugfix1';
+import { playBotActions } from './bot.js?v=bugfix1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=bugfix1';
 
 const game = new Game();
 let setupSelections = [];
@@ -797,7 +797,10 @@ function showCityInfo(cityId, cur) {
           let hMult = GAME_CONFIG.hotelCostMultiplier || 1;
           if (cur.character && cur.character.special === 'group_rate') hMult *= 0.75;
           const cost = Math.floor(h.cost * hMult);
-          const vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
+          // Show preview for current viewer; base VP if no character context
+          const vp = cur
+            ? previewHotelStayVp(cur, h, cityId)
+            : Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
           const icon = (HOTELS[h.brand] && HOTELS[h.brand].logo) || h.icon || `assets/hotels/brands/${h.brand}.png`;
           return `<li class="${itemClass}">
             <img class="hotel-icon" src="${icon}" alt="" width="48" height="48" loading="lazy" />
@@ -1894,6 +1897,14 @@ function openFlightModal() {
   renderFlightList();
 }
 
+function previewHotelStayVp(p, h, cityId) {
+  let vp = Math.round((h.vp || 2) * (GAME_CONFIG.hotelVpMultiplier || 1));
+  vp += (p.turn && p.turn.hotelVpBonus) || 0;
+  if (!(p._hotelCities && p._hotelCities.has(cityId))) vp += 1;
+  if (p.character && p.character.special === 'group_rate') vp += 3;
+  return vp;
+}
+
 function openHotelModal() {
   const p = game.currentPlayer;
   const city = CITIES[p.city];
@@ -1902,33 +1913,44 @@ function openHotelModal() {
     ((p.turn && p.turn.hotelMult) || 1) *
     (GAME_CONFIG.hotelCostMultiplier || 1);
   if (p.character.special === 'group_rate') hotelMult *= 0.75;
-  const vpMult = GAME_CONFIG.hotelVpMultiplier || 1;
   const freeNight = p.turn && p.turn.freeNightAvailable;
+  const claims = game.hotelClaims || {};
 
   openModal(
     `Book 1 night in ${city.name}`,
     `
-      <p class="muted">Each property once per game (1 night). Hotel VP is boosted — stays score better than hoarding points.</p>
+      <p class="muted">First player to stay <strong>claims</strong> the property and earns its VP. Claimed hotels are locked for everyone else.</p>
       <div class="flight-list">
         ${hotels
           .map((h) => {
             const cost = Math.floor(h.cost * hotelMult);
-            const vp = Math.round((h.vp || 2) * vpMult);
+            const vp = previewHotelStayVp(p, h, city.id);
             const bal = p.hotels[h.brand] || 0;
-            const already = p.stayedHotels.has(h.id);
+            const claim = claims[h.id];
+            const claimedByMe = claim && claim.playerId === p.id;
+            const claimedByOther = claim && claim.playerId !== p.id;
+            const already = p.stayedHotels.has(h.id) || !!claim;
             const brandName = HOTELS[h.brand] ? HOTELS[h.brand].name : h.brand;
             const canPay = freeNight || bal >= cost;
-            const icon = (HOTELS[h.brand] && HOTELS[h.brand].logo) || h.icon || `assets/hotels/brands/${h.brand}.png`;
+            const disabled = already || !canPay;
+            const icon =
+              (HOTELS[h.brand] && HOTELS[h.brand].logo) ||
+              h.icon ||
+              `assets/hotels/brands/${h.brand}.png`;
+            let note = '';
+            if (claimedByMe) note = ' · <em>you claimed</em>';
+            else if (claimedByOther)
+              note = ` · <em>claimed by ${claim.playerName}</em>`;
+            else if (!canPay) note = ' · <em>short on points</em>';
             return `
-              <label class="card-option hotel-pick ${already ? 'disabled-opt' : ''}">
+              <label class="card-option hotel-pick ${disabled ? 'disabled-opt' : ''}${claimedByOther ? ' hotel-claimed' : ''}">
                 <input type="radio" name="hotel" value="${h.id}"
-                  ${already || !canPay ? 'disabled' : ''} />
+                  ${disabled ? 'disabled' : ''} />
                 <img class="hotel-icon hotel-icon-lg" src="${icon}" alt="" width="64" height="64" loading="lazy" />
                 <div>
                   <strong>${h.name}</strong>
                   <span class="bank-tag" style="background:${HOTELS[h.brand] ? HOTELS[h.brand].color : '#666'}">${brandName}</span>
-                  <p>${fmt(cost)} pts · <strong>${vp} VP</strong> · balance ${fmt(bal)} ${brandName}
-                    ${already ? ' · <em>already stayed</em>' : !canPay ? ' · <em>short on points</em>' : ''}</p>
+                  <p>${fmt(cost)} pts · <strong>${vp} VP</strong> · balance ${fmt(bal)} ${brandName}${note}</p>
                 </div>
               </label>
             `;
@@ -1940,8 +1962,15 @@ function openHotelModal() {
     () => {
       const sel = $('#modal-body input[name=hotel]:checked');
       if (!sel) throw new Error('Select a hotel');
+      // Re-check live claim state at confirm (another player may have claimed)
+      const live = game.hotelClaims && game.hotelClaims[sel.value];
+      if (live) {
+        throw new Error(
+          `Too late — ${live.playerName} already claimed this hotel`
+        );
+      }
       const res = game.bookHotel(sel.value);
-      toast(`Stayed at ${res.hotel.name} · +${res.stayVp} VP`);
+      toast(`Claimed ${res.hotel.name} · +${res.stayVp} VP (locked for others)`);
     }
   );
 }
