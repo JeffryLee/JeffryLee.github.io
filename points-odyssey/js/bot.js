@@ -21,7 +21,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=fixload2';
+} from './data.js?v=compat1';
 
 /**
  * Second+ cards: prefer non-Chase partners first so residual bank mix diversifies.
@@ -494,7 +494,7 @@ function doOneAction(game, p) {
       air >= 5000;
     // Family prioritizes claiming hotels while open
     const hotelFirst =
-      p.character.special === 'group_rate' || stay?.vp >= 10 || late;
+      p.character.special === 'group_rate' || (stay && stay.vp >= 10) || late;
     if (
       stay &&
       (hotelFirst || !canFinishSoon || stay.vp >= 8) &&

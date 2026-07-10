@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=fixload2';
+} from './data.js?v=compat1';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -315,7 +315,7 @@ export class Game {
   }
 
   dealRaceGoals() {
-    const n = GAME_CONFIG.raceGoalCount ?? 3;
+    const n = GAME_CONFIG.raceGoalCount != null ? GAME_CONFIG.raceGoalCount : 3;
     this.raceGoals = [];
     for (let i = 0; i < n && this.ticketDeck.length; i++) {
       this.raceGoals.push(this.ticketDeck.pop());
@@ -323,7 +323,7 @@ export class Game {
   }
 
   refillRaceGoals() {
-    const n = GAME_CONFIG.raceGoalCount ?? 3;
+    const n = GAME_CONFIG.raceGoalCount != null ? GAME_CONFIG.raceGoalCount : 3;
     while (this.raceGoals.length < n && this.ticketDeck.length) {
       this.raceGoals.push(this.ticketDeck.pop());
     }

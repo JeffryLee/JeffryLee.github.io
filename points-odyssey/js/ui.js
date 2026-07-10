@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=fixload2';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=fixload2';
-import { playBotActions } from './bot.js?v=fixload2';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=fixload2';
+} from './game.js?v=compat1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=compat1';
+import { playBotActions } from './bot.js?v=compat1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=compat1';
 
 const game = new Game();
 let setupSelections = [];
@@ -943,7 +943,7 @@ function renderHand(cur, snap) {
   }).join('');
 
   // Event
-  const ev = cur.turn?.event;
+  const ev = cur.turn && cur.turn.event;
   $('#event-display').innerHTML = ev
     ? `
       <img src="assets/event-card.jpg" alt="" class="event-art" />
@@ -1210,13 +1210,13 @@ function suggestNextMove(cur, snap) {
 
   if ((t.freeTransferLeft || 0) > 0 && banks >= 1000 && air < 10000) {
     const bank =
-      cur.cards[0]?.bank ||
-      Object.entries(cur.banks).sort((a, b) => b[1] - a[1])[0]?.[0] ||
+      (cur.cards[0] && cur.cards[0].bank) ||
+      (Object.entries(cur.banks).sort((a, b) => b[1] - a[1])[0] || [])[0] ||
       'chase';
     const partners = TRANSFERS[bank] || {};
     const airPartner = Object.keys(partners).find((p) => partners[p].type === 'airline');
     if (airPartner) {
-      return `Free transfer: move ${BANKS[bank]?.name || bank} → ${airPartner} so you can fly.`;
+      return `Free transfer: move ${(BANKS[bank] && BANKS[bank].name) || bank} → ${airPartner} so you can fly.`;
     }
   }
   if ((t.travelLeft || 0) > 0 && air >= 5000 && needCity) {
@@ -1610,13 +1610,13 @@ function openTransferModal() {
   const fillPartners = () => {
     const bank = $('#xfer-bank').value;
     const partners = TRANSFERS[bank] || {};
-    const bonus = p.turn?.transferBonus;
+    const bonus = p.turn && p.turn.transferBonus;
     $('#xfer-partner').innerHTML = Object.entries(partners)
       .map(([id, info]) => {
         const name =
           info.type === 'hotel'
-            ? HOTELS[id]?.name || id
-            : AIRLINES[id]?.name || id;
+            ? (HOTELS[id] && HOTELS[id].name) || id
+            : (AIRLINES[id] && AIRLINES[id].name) || id;
         const b =
           bonus && bonus.partner === id
             ? ` ⭐ +${Math.round(bonus.bonus * 100)}%`
@@ -1634,7 +1634,7 @@ function openTransferModal() {
     if (!bank || !partner) return;
     const { ratio } = TRANSFERS[bank][partner];
     let out = Math.floor(amount * ratio);
-    const bonus = p.turn?.transferBonus;
+    const bonus = p.turn && p.turn.transferBonus;
     if (bonus && bonus.partner === partner) {
       out = Math.floor(out * (1 + bonus.bonus));
     }
@@ -2028,16 +2028,21 @@ function renderGameOver() {
 // ——— Rules tab ———
 
 function wireNav() {
-  $('#btn-show-rules')?.addEventListener('click', () => {
+  const btnShowRules = $('#btn-show-rules');
+  if (btnShowRules) btnShowRules.addEventListener('click', () => {
     showScreen('screen-rules');
   });
-  $('#btn-back-setup')?.addEventListener('click', () => showScreen('screen-setup'));
-  $('#btn-back-game')?.addEventListener('click', () => {
+  const btnBackSetup = $('#btn-back-setup');
+  if (btnBackSetup) btnBackSetup.addEventListener('click', () => showScreen('screen-setup'));
+  const btnBackGame = $('#btn-back-game');
+  if (btnBackGame) btnBackGame.addEventListener('click', () => {
     if (game.phase === 'playing') showScreen('screen-game');
     else showScreen('screen-setup');
   });
-  $('#btn-how-to')?.addEventListener('click', () => showScreen('screen-rules'));
-  $('#btn-new-game')?.addEventListener('click', () => {
+  const btnHowTo = $('#btn-how-to');
+  if (btnHowTo) btnHowTo.addEventListener('click', () => showScreen('screen-rules'));
+  const btnNewGame = $('#btn-new-game');
+  if (btnNewGame) btnNewGame.addEventListener('click', () => {
     setupSelections = [];
     game.phase = 'setup';
     renderSetup();
@@ -2063,9 +2068,10 @@ function wireNav() {
   };
 
   // Quick demo: 1 human + 2 bots
-  $('#btn-quick-demo')?.addEventListener('click', () => {
+  const btnQuickDemo = $('#btn-quick-demo');
+  if (btnQuickDemo) btnQuickDemo.addEventListener('click', () => {
     ensureMusic();
-    const picks = [...CHARACTERS].sort(() => Math.random() - 0.5).slice(0, 3);
+    const picks = CHARACTERS.slice().sort(() => Math.random() - 0.5).slice(0, 3);
     setupSelections = picks.map((c, i) => ({
       characterId: c.id,
       name: i === 0 ? 'You' : `Bot ${c.name.replace(/^The /, '')}`,
