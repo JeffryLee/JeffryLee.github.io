@@ -126,7 +126,7 @@ export const CATEGORIES = [
   'rent',
   'hotels',
   'flights',
-  'everything',
+  'others',
 ];
 
 /**
@@ -160,7 +160,7 @@ export const CHARACTERS = [
       flights: 15,
       hotels: 10,
       transit: 8,
-      everything: 7,
+      others: 7,
     },
   },
   {
@@ -184,7 +184,7 @@ export const CHARACTERS = [
       dining: 15,
       hotels: 14,
       travel: 13,
-      everything: 10,
+      others: 10,
     },
   },
   {
@@ -208,7 +208,7 @@ export const CHARACTERS = [
       dining: 14,
       hotels: 12,
       flights: 12,
-      everything: 8,
+      others: 8,
     },
   },
   {
@@ -224,7 +224,7 @@ export const CHARACTERS = [
     spendProfile: {
       dining: 45,
       groceries: 25,
-      everything: 12,
+      others: 12,
       travel: 10,
       transit: 8,
     },
@@ -247,7 +247,7 @@ export const CHARACTERS = [
     spendProfile: {
       rent: 50,
       dining: 15,
-      everything: 12,
+      others: 12,
       travel: 10,
       gas: 8,
       groceries: 5,
@@ -273,7 +273,7 @@ export const CHARACTERS = [
       hotels: 25,
       dining: 20,
       travel: 15,
-      everything: 10,
+      others: 10,
       transit: 5,
     },
   },
@@ -281,7 +281,7 @@ export const CHARACTERS = [
 
 /** Normalize spendProfile weights to percentages (0–100). */
 export function spendProfilePercents(profile) {
-  const entries = Object.entries(profile || { everything: 1 });
+  const entries = Object.entries(profile || { others: 1 });
   const sum = entries.reduce((s, [, w]) => s + w, 0) || 1;
   const out = {};
   for (const [k, w] of entries) out[k] = Math.round((100 * w) / sum);
@@ -289,7 +289,7 @@ export function spendProfilePercents(profile) {
 }
 
 function pickWeighted(weights) {
-  const entries = Object.entries(weights || { everything: 1 });
+  const entries = Object.entries(weights || { others: 1 });
   const total = entries.reduce((s, [, w]) => s + w, 0) || 1;
   let r = Math.random() * total;
   for (const [k, w] of entries) {
@@ -303,7 +303,7 @@ function pickWeighted(weights) {
  * Roll lifestyle spend: SPEND_DRAWS chunks of budget by character odds.
  */
 export function rollSpendAllocation(character) {
-  const profile = character.spendProfile || { everything: 1 };
+  const profile = character.spendProfile || { others: 1 };
   const budget = GAME_CONFIG.budgetPerTurn;
   const draws = SPEND_DRAWS;
   const chunk = Math.floor(budget / draws);
@@ -323,7 +323,7 @@ export function rollSpendAllocation(character) {
  * Credit cards — redesigned earn structure (2026 rebalance):
  *
  * Goals:
- *  - Flat "everything" cards are baseline (~7.5–8.5k / $5k), not best-in-slot.
+ *  - Flat "others" cards are baseline (~7.5–8.5k / $5k), not best-in-slot.
  *  - Premium cards win on THEIR categories + bank partners, not raw avg earn.
  *  - Signup ≈ 2–3 good income turns, not half the game.
  *  - Bank choice (UA/DL/AA/hotels) matters more than maxing a 2× flat card.
@@ -340,7 +340,7 @@ export const CREDIT_CARDS = [
     name: 'Freedom Unlimited',
     bank: 'chase',
     // Slightly under other banks' baselines so Chase is not the default pile-up
-    earn: { everything: 1.4 },
+    earn: { others: 1.4 },
     signupBonus: 10000,
     minSpend: 500,
     annualFee: 0,
@@ -350,7 +350,7 @@ export const CREDIT_CARDS = [
     id: 'cff',
     name: 'Freedom Flex',
     bank: 'chase',
-    earn: { groceries: 4, gas: 3, everything: 1 },
+    earn: { groceries: 4, gas: 3, others: 1 },
     signupBonus: 10000,
     minSpend: 500,
     annualFee: 0,
@@ -360,7 +360,7 @@ export const CREDIT_CARDS = [
     id: 'csp',
     name: 'Sapphire Preferred',
     bank: 'chase',
-    earn: { travel: 3, dining: 2, everything: 1 },
+    earn: { travel: 3, dining: 2, others: 1 },
     signupBonus: 20000,
     minSpend: 3000,
     annualFee: 95,
@@ -370,7 +370,7 @@ export const CREDIT_CARDS = [
     id: 'csr',
     name: 'Sapphire Reserve',
     bank: 'chase',
-    earn: { travel: 3, dining: 3, hotels: 2, everything: 1 },
+    earn: { travel: 3, dining: 3, hotels: 2, others: 1 },
     signupBonus: 25000,
     minSpend: 4000,
     annualFee: 550,
@@ -381,7 +381,7 @@ export const CREDIT_CARDS = [
     id: 'amex_blue',
     name: 'Blue Business Plus',
     bank: 'amex',
-    earn: { everything: 1.8 },
+    earn: { others: 1.8 },
     signupBonus: 10000,
     minSpend: 3000,
     annualFee: 0,
@@ -391,7 +391,7 @@ export const CREDIT_CARDS = [
     id: 'amex_gold',
     name: 'Gold Card',
     bank: 'amex',
-    earn: { dining: 4, groceries: 3, flights: 3, everything: 1 },
+    earn: { dining: 4, groceries: 3, flights: 3, others: 1 },
     signupBonus: 20000,
     minSpend: 3000,
     annualFee: 325,
@@ -401,7 +401,7 @@ export const CREDIT_CARDS = [
     id: 'amex_plat',
     name: 'Platinum Card',
     bank: 'amex',
-    earn: { flights: 5, hotels: 4, everything: 1 },
+    earn: { flights: 5, hotels: 4, others: 1 },
     signupBonus: 25000,
     minSpend: 4000,
     annualFee: 695,
@@ -411,7 +411,7 @@ export const CREDIT_CARDS = [
     id: 'delta_gold',
     name: 'Delta Gold',
     bank: 'amex',
-    earn: { flights: 3, dining: 2, everything: 1 },
+    earn: { flights: 3, dining: 2, others: 1 },
     signupBonus: 18000,
     minSpend: 2000,
     annualFee: 150,
@@ -423,7 +423,7 @@ export const CREDIT_CARDS = [
     id: 'double_cash',
     name: 'Double Cash',
     bank: 'citi',
-    earn: { everything: 1.6 },
+    earn: { others: 1.6 },
     signupBonus: 8000,
     minSpend: 0,
     annualFee: 0,
@@ -433,7 +433,7 @@ export const CREDIT_CARDS = [
     id: 'custom_cash',
     name: 'Custom Cash',
     bank: 'citi',
-    earn: { dining: 4, everything: 1 },
+    earn: { dining: 4, others: 1 },
     signupBonus: 10000,
     minSpend: 500,
     annualFee: 0,
@@ -443,7 +443,7 @@ export const CREDIT_CARDS = [
     id: 'strata',
     name: 'Strata Premier',
     bank: 'citi',
-    earn: { travel: 3, dining: 3, groceries: 3, gas: 2, everything: 1 },
+    earn: { travel: 3, dining: 3, groceries: 3, gas: 2, others: 1 },
     signupBonus: 20000,
     minSpend: 3000,
     annualFee: 95,
@@ -454,7 +454,7 @@ export const CREDIT_CARDS = [
     id: 'bilt_card',
     name: 'Bilt Mastercard',
     bank: 'bilt',
-    earn: { rent: 2, dining: 3, travel: 3, everything: 1 },
+    earn: { rent: 2, dining: 3, travel: 3, others: 1 },
     signupBonus: 10000,
     minSpend: 0,
     annualFee: 0,

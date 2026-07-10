@@ -191,7 +191,7 @@
       for (const c of CHARACTERS) profiles[c.id] = c.spendProfile;
       function rate(earn, cat) {
         if (earn[cat] != null) return earn[cat];
-        return earn.everything || 0;
+        return earn.others || 0;
       }
       function expPts(earn, profile) {
         const tw = Object.values(profile).reduce((a, b) => a + b, 0);

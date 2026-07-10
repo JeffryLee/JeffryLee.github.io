@@ -25,7 +25,7 @@ import {
   SPEND_DRAWS,
   STARTER_CARDS,
   neighbors,
-} from './data.js?v=spendshow1';
+} from './data.js?v=others1';
 
 function emptyBanks() {
   return { chase: 0, amex: 0, citi: 0, bilt: 0 };
@@ -717,6 +717,8 @@ export class Game {
   cardEarnRate(cardDef, category) {
     if (!cardDef || !cardDef.earn) return 0;
     if (cardDef.earn[category] != null) return cardDef.earn[category];
+    // Catch-all base rate (legacy key: everything)
+    if (cardDef.earn.others != null) return cardDef.earn.others;
     if (cardDef.earn.everything != null) return cardDef.earn.everything;
     return 0;
   }
@@ -729,7 +731,7 @@ export class Game {
       return { bank: null, rate: 0, card: null };
     }
     const prefs = player.earnPrefs || {};
-    const prefId = prefs[category] || prefs.everything || null;
+    const prefId = prefs[category] || prefs.others || null;
     if (prefId) {
       const held = player.cards.find((c) => c.id === prefId);
       if (held) {
@@ -787,7 +789,7 @@ export class Game {
       'rent',
       'hotels',
       'flights',
-      'everything',
+      'others',
     ];
     for (const cat of cats) {
       const best = this.bestEarnRate(player, cat);

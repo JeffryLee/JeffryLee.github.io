@@ -12,10 +12,10 @@ import {
   ACHIEVEMENTS,
   GAME_CONFIG,
   listFlightOptions,
-} from './game.js?v=spendshow1';
-import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=spendshow1';
-import { playBotActions } from './bot.js?v=spendshow1';
-import { initMusicUI, playTrack, ensureMusic } from './music.js?v=spendshow1';
+} from './game.js?v=others1';
+import { BANKS, HOTELS, AIRLINES, getRoute, STRATEGY_TIPS } from './data.js?v=others1';
+import { playBotActions } from './bot.js?v=others1';
+import { initMusicUI, playTrack, ensureMusic } from './music.js?v=others1';
 
 const game = new Game();
 let setupSelections = [];
@@ -54,7 +54,7 @@ function fmt(n) {
 }
 
 function formatSpendProfileLines(c) {
-  const profile = c.spendProfile || { everything: 1 };
+  const profile = c.spendProfile || { others: 1 };
   const sum = Object.values(profile).reduce((s, w) => s + w, 0) || 1;
   return Object.entries(profile)
     .sort((a, b) => b[1] - a[1])
@@ -1048,7 +1048,7 @@ const EARN_PREF_CATS = [
   'rent',
   'hotels',
   'flights',
-  'everything',
+  'others',
 ];
 
 /** Short labels for earn-pref dropdowns (side panel is narrow) */
@@ -1097,7 +1097,7 @@ function renderEarnPrefs(cur, snap) {
   const cats = EARN_PREF_CATS.filter(
     (cat) =>
       profileCats.includes(cat) ||
-      cat === 'everything' ||
+      cat === 'others' ||
       prefs[cat]
   );
 
@@ -1135,8 +1135,8 @@ function renderEarnPrefs(cur, snap) {
                   ? game.cardEarnRate(def, cat)
                   : def.earn && def.earn[cat] != null
                     ? def.earn[cat]
-                    : def.earn && def.earn.everything != null
-                      ? def.earn.everything
+                    : def.earn && def.earn.others != null
+                      ? def.earn.others
                       : 0;
                 return `<option value="${c.id}" ${
                   selected === c.id ? 'selected' : ''
