@@ -4,11 +4,12 @@
  * Action economy: 1 free Transfer · 1 Build · 1 Travel
  * Tickets/races ordered; award seats limited per airline/round.
  *
- * Character presets (from strategy sims, max score):
- *  - Consultant / Foodie / Nomad → tickets + Amex Gold → Delta
- *  - Family → hotel race + light Amex→Hilton when nearby
- *  - Landlord → Bilt rent earn + flexible UA/Hyatt (near-default)
- *  - Executive → premium cards + Marriott hotel claims
+ * Character presets (sequential live-field re-opt, max avg VP):
+ *  - Consultant / Family → Chase + United tickets (Hyatt side-fund)
+ *  - Nomad → Amex Gold + Delta hard ticket dump
+ *  - Foodie → Citi + AA soft (dining+travel earn; light Hilton)
+ *  - Landlord → Citi Strata + AA tickets
+ *  - Executive → Marriott hotel race (Plat/Gold earn → hotel dump)
  */
 
 import {
@@ -18,7 +19,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=foodieopt2';
+} from './data.js?v=allopt2';
 
 /**
  * Per-character bot profile.
@@ -27,19 +28,42 @@ import {
  * lightHilton: Amex→Hilton only for open 0–1 hop claims
  * hotelXfer: preferred hotel brand when general hotel funding
  * exploreBoost: extra score for new cities (Nomad)
+ * airDumpPct: fraction of bank to dump (air for tickets; hotel brand if hotelPriority high)
+ * ticketEager: draw tickets more aggressively
  */
 const CHAR_STRAT = {
+  // Chase ecosystem → United tickets
   consultant: {
-    cards: ['amex_gold', 'delta_gold', 'csp', 'strata'],
-    preferAir: 'delta',
-    hotelPriority: 'normal',
+    cards: ['csp', 'cfu', 'csr', 'bilt_card'],
+    preferAir: 'united',
+    hotelPriority: 'low',
     lightHilton: false,
+    hotelXfer: 'hyatt',
+    exploreBoost: false,
+    earnPins: {
+      csp: ['travel', 'dining', 'flights'],
+      cfu: ['others'],
+    },
+    airDumpPct: 0.55,
+    ticketEager: true,
+  },
+  // Citi+AA soft: dining stack + AA tickets (beats pure Hilton race in live field)
+  foodie: {
+    cards: ['strata', 'amex_gold', 'csp', 'double_cash'],
+    preferAir: 'american',
+    hotelPriority: 'normal',
+    lightHilton: true,
     hotelXfer: null,
     exploreBoost: false,
-    earnPins: { amex_gold: ['dining', 'groceries', 'flights', 'travel'] },
+    earnPins: {
+      strata: ['travel', 'dining', 'groceries'],
+      amex_gold: ['flights', 'dining'],
+    },
+    airDumpPct: 0.45,
+    ticketEager: true,
   },
-  foodie: {
-    // Max-VP path (sims): Amex Gold earn → dump to Delta → tickets; hotels secondary
+  // Gold+Delta hard dump for tickets (city skill stacks with movement)
+  nomad: {
     cards: ['amex_gold', 'delta_gold', 'strata', 'csp'],
     preferAir: 'delta',
     hotelPriority: 'low',
@@ -49,53 +73,52 @@ const CHAR_STRAT = {
     earnPins: {
       amex_gold: ['dining', 'groceries', 'flights', 'travel', 'others'],
     },
-    /** Fraction of Amex balance to push to preferAir when free/build transfer free */
-    airDumpPct: 0.65,
+    airDumpPct: 0.6,
     ticketEager: true,
   },
-  nomad: {
-    cards: ['amex_gold', 'bilt_card', 'csp', 'cfu'],
-    preferAir: 'delta',
+  // Chase → United ticket engine (Family hotel race underperforms tickets)
+  family: {
+    cards: ['csp', 'cfu', 'csr', 'bilt_card'],
+    preferAir: 'united',
+    hotelPriority: 'low',
+    lightHilton: false,
+    hotelXfer: 'hyatt',
+    exploreBoost: false,
+    earnPins: {
+      csp: ['travel', 'dining', 'flights'],
+      cfu: ['others'],
+    },
+    airDumpPct: 0.55,
+    ticketEager: true,
+  },
+  // Citi ecosystem → American tickets
+  landlord: {
+    cards: ['strata', 'double_cash', 'custom_cash', 'csp'],
+    preferAir: 'american',
     hotelPriority: 'low',
     lightHilton: false,
     hotelXfer: null,
-    exploreBoost: true,
-    earnPins: { amex_gold: ['dining', 'flights', 'travel'] },
-  },
-  family: {
-    cards: ['amex_gold', 'csp', 'bilt_card', 'strata'],
-    preferAir: 'delta',
-    hotelPriority: 'high',
-    lightHilton: true,
-    hotelXfer: 'hilton',
     exploreBoost: false,
     earnPins: {
-      amex_gold: ['dining', 'groceries', 'flights'],
-      csp: ['travel', 'hotels'],
+      strata: ['travel', 'dining', 'groceries', 'gas'],
     },
+    airDumpPct: 0.55,
+    ticketEager: true,
   },
-  landlord: {
-    // Near-default: Bilt earn + flexible transfers (forced scripts lost VP in sims)
-    cards: ['bilt_card', 'strata', 'csp', 'double_cash'],
-    preferAir: null, // let makeXfer pick thinnest airline
-    hotelPriority: 'normal',
-    lightHilton: false,
-    hotelXfer: null,
-    exploreBoost: false,
-    earnPins: { bilt_card: ['rent', 'dining', 'travel'] },
-  },
+  // Marriott hotel race — dumps bank → Marriott (not Delta)
   executive: {
-    cards: ['amex_plat', 'amex_gold', 'csr', 'bilt_card', 'strata'],
+    cards: ['amex_gold', 'amex_plat', 'bilt_card', 'csp'],
     preferAir: 'delta',
-    hotelPriority: 'high', // +3 stay VP — race claims while still stocking Delta
+    hotelPriority: 'high',
     lightHilton: false,
     hotelXfer: 'marriott',
     exploreBoost: false,
     earnPins: {
       amex_plat: ['flights', 'hotels'],
       amex_gold: ['dining', 'groceries'],
-      csr: ['travel', 'dining'],
     },
+    airDumpPct: 0.45,
+    ticketEager: false,
   },
 };
 
@@ -811,26 +834,53 @@ function doOneAction(game, p) {
       }
     }
 
-    // Foodie (etc.): aggressive bank → preferred airline dump for ticket fuel
+    // Strategy dumps: hotel racers fund hotel brand first; ticket paths fund preferAir
     const s = strat(p);
-    if (s.airDumpPct && s.preferAir) {
-      const dumps = [
-        { bank: 'amex', air: s.preferAir },
-        { bank: 'amex', air: 'delta' },
-        { bank: 'citi', air: 'american' },
-        { bank: 'chase', air: 'united' },
-        { bank: 'bilt', air: 'united' },
-      ];
-      for (const d of dumps) {
-        const partners = TRANSFERS[d.bank];
-        if (!partners || !partners[d.air]) continue;
-        const bal = p.banks[d.bank] || 0;
-        if (bal < 2000) continue;
-        const amt =
-          Math.floor(Math.min(bal, Math.max(4000, bal * s.airDumpPct)) / 1000) *
-          1000;
-        if (amt >= 1000 && ok(() => game.transferPoints(d.bank, d.air, amt))) {
-          return `dump ${d.bank}→${d.air}`;
+    if (s.airDumpPct > 0) {
+      if (hotelPriorityHigh(p) && s.hotelXfer) {
+        const hotelDumps = [
+          { bank: 'amex', dest: s.hotelXfer },
+          { bank: 'chase', dest: s.hotelXfer },
+          { bank: 'bilt', dest: s.hotelXfer },
+          { bank: 'citi', dest: s.hotelXfer },
+        ];
+        for (const d of hotelDumps) {
+          const partners = TRANSFERS[d.bank];
+          if (!partners || !partners[d.dest]) continue;
+          const bal = p.banks[d.bank] || 0;
+          if (bal < 2000) continue;
+          const amt =
+            Math.floor(Math.min(bal, Math.max(4000, bal * s.airDumpPct)) / 1000) *
+            1000;
+          if (amt >= 1000 && ok(() => game.transferPoints(d.bank, d.dest, amt))) {
+            return `dump ${d.bank}→${d.dest}`;
+          }
+        }
+      } else if (s.preferAir) {
+        // Match ecosystem bank → airline (Chase/UA, Citi/AA, Amex/DL)
+        const air = s.preferAir;
+        const dumps = [
+          air === 'united'
+            ? { bank: 'chase', air }
+            : air === 'american'
+              ? { bank: 'citi', air }
+              : { bank: 'amex', air },
+          { bank: 'amex', air: 'delta' },
+          { bank: 'citi', air: 'american' },
+          { bank: 'chase', air: 'united' },
+          { bank: 'bilt', air: air === 'american' ? 'american' : 'united' },
+        ];
+        for (const d of dumps) {
+          const partners = TRANSFERS[d.bank];
+          if (!partners || !partners[d.air]) continue;
+          const bal = p.banks[d.bank] || 0;
+          if (bal < 2000) continue;
+          const amt =
+            Math.floor(Math.min(bal, Math.max(4000, bal * s.airDumpPct)) / 1000) *
+            1000;
+          if (amt >= 1000 && ok(() => game.transferPoints(d.bank, d.air, amt))) {
+            return `dump ${d.bank}→${d.air}`;
+          }
         }
       }
     }
@@ -996,6 +1046,16 @@ function botCanAct(p) {
   const freeX = p.turn.freeTransferLeft || 0;
   const bank = sum(p.banks);
   return build + travel > 0 || (freeX > 0 && bank >= 1000);
+}
+
+/** Mutable strategy table (sims can override per character). */
+export { CHAR_STRAT };
+
+/** Replace one character's bot profile (returns previous). */
+export function setCharStrat(id, profile) {
+  const prev = CHAR_STRAT[id];
+  CHAR_STRAT[id] = profile;
+  return prev;
 }
 
 export function playBotActions(game) {
