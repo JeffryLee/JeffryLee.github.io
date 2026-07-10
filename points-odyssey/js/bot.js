@@ -4,12 +4,13 @@
  * Action economy: 1 free Transfer · 1 Build · 1 Travel
  * Tickets/races ordered; award seats limited per airline/round.
  *
- * Character presets (sequential live-field re-opt, max avg VP):
- *  - Consultant / Family → Chase + United tickets (Hyatt side-fund)
- *  - Nomad → Amex Gold + Delta hard ticket dump
- *  - Foodie → Citi + AA soft (dining+travel earn; light Hilton)
- *  - Landlord → Citi Strata + AA tickets
- *  - Executive → Marriott hotel race (Plat/Gold earn → hotel dump)
+ * Character presets (~10-variant sequential live-field search, skills fixed):
+ *  - Consultant → Chase + United tickets
+ *  - Family → Chase + United hard dump (0.7)
+ *  - Nomad → Amex Gold + Delta tickets
+ *  - Foodie → Citi AA pure tickets (Gold dining pin)
+ *  - Landlord → Citi + AA soft + light Hilton
+ *  - Executive → Marriott hotel race, hard hotel dump (0.65)
  */
 
 import {
@@ -19,7 +20,7 @@ import {
   TRANSFERS,
   listFlightOptions,
   GAME_CONFIG,
-} from './data.js?v=skillbal1';
+} from './data.js?v=strat10';
 
 /**
  * Per-character bot profile.
@@ -32,7 +33,7 @@ import {
  * ticketEager: draw tickets more aggressively
  */
 const CHAR_STRAT = {
-  // Chase ecosystem → United tickets
+  // Chase → United tickets (best of 10; Hyatt side-fund)
   consultant: {
     cards: ['csp', 'cfu', 'csr', 'bilt_card'],
     preferAir: 'united',
@@ -47,22 +48,22 @@ const CHAR_STRAT = {
     airDumpPct: 0.55,
     ticketEager: true,
   },
-  // Citi+AA soft: dining stack + AA tickets (beats pure Hilton race in live field)
+  // Pure AA ticket path + Gold dining pin (beats soft Hilton hybrid)
   foodie: {
-    cards: ['strata', 'amex_gold', 'csp', 'double_cash'],
+    cards: ['strata', 'double_cash', 'custom_cash', 'amex_gold'],
     preferAir: 'american',
-    hotelPriority: 'normal',
-    lightHilton: true,
+    hotelPriority: 'low',
+    lightHilton: false,
     hotelXfer: null,
     exploreBoost: false,
     earnPins: {
-      strata: ['travel', 'dining', 'groceries'],
-      amex_gold: ['flights', 'dining'],
+      amex_gold: ['dining', 'groceries'],
+      strata: ['travel', 'gas', 'others'],
     },
-    airDumpPct: 0.45,
+    airDumpPct: 0.55,
     ticketEager: true,
   },
-  // Gold+Delta hard dump for tickets (city skill stacks with movement)
+  // Gold → Delta tickets (city/flight skills stack with movement)
   nomad: {
     cards: ['amex_gold', 'delta_gold', 'strata', 'csp'],
     preferAir: 'delta',
@@ -76,7 +77,7 @@ const CHAR_STRAT = {
     airDumpPct: 0.6,
     ticketEager: true,
   },
-  // Chase → United ticket engine (Family hotel race underperforms tickets)
+  // Chase → United hard dump (0.7 + CSR pins); hotel race underperformed
   family: {
     cards: ['csp', 'cfu', 'csr', 'bilt_card'],
     preferAir: 'united',
@@ -87,25 +88,26 @@ const CHAR_STRAT = {
     earnPins: {
       csp: ['travel', 'dining', 'flights'],
       cfu: ['others'],
+      csr: ['travel', 'dining'],
     },
-    airDumpPct: 0.55,
+    airDumpPct: 0.7,
     ticketEager: true,
   },
-  // Citi ecosystem → American tickets
+  // Citi → AA with soft hotels / light Hilton (slight edge over pure AA)
   landlord: {
     cards: ['strata', 'double_cash', 'custom_cash', 'csp'],
     preferAir: 'american',
-    hotelPriority: 'low',
-    lightHilton: false,
-    hotelXfer: null,
+    hotelPriority: 'normal',
+    lightHilton: true,
+    hotelXfer: 'hilton',
     exploreBoost: false,
     earnPins: {
       strata: ['travel', 'dining', 'groceries', 'gas'],
     },
-    airDumpPct: 0.55,
+    airDumpPct: 0.45,
     ticketEager: true,
   },
-  // Marriott hotel race — dumps bank → Marriott (not Delta)
+  // Marriott race — aggressive bank → Marriott dump
   executive: {
     cards: ['amex_gold', 'amex_plat', 'bilt_card', 'csp'],
     preferAir: 'delta',
@@ -117,7 +119,7 @@ const CHAR_STRAT = {
       amex_plat: ['flights', 'hotels'],
       amex_gold: ['dining', 'groceries'],
     },
-    airDumpPct: 0.45,
+    airDumpPct: 0.65,
     ticketEager: false,
   },
 };
